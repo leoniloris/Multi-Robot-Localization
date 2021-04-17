@@ -1,6 +1,7 @@
 <launch>
     <arg name="robot_name"/>
     <arg name="init_pose"/>
+    <arg name="verbose" value="true" />
 
     <node name="spawn_minibot_model" pkg="gazebo_ros" type="spawn_model"
      args="$(arg init_pose) -urdf -param /robot_description -model $(arg robot_name)"

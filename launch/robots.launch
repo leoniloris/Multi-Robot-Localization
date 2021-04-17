@@ -1,8 +1,9 @@
 <launch>
   <!-- No namespace here as we will share this description.
        Access with slash at the beginning -->
+  <arg name="verbose" value="true" />
   <param name="robot_description"
-    command="xacro $(find turtlebot3_description)/urdf/turtlebot3_burger.urdf.xacro" />
+    command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_burger.urdf.xacro" />
 
   <!-- BEGIN ROBOT 1-->
   <group ns="robot1">
