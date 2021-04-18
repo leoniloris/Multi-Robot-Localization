@@ -9,5 +9,6 @@
   <!-- include our robots -->
   <include file="$(find multi_robot)/launch/robots.launch">
     <arg name="n_robots" value="$(arg n_robots)"/>
+
   </include>
 </launch>

@@ -1,5 +1,6 @@
 <launch>
   <arg name="n_robots"/>
+  <arg name="verbose" value="true"/>
 
   <param name="robot_description"
     command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_burger.urdf.xacro" />
