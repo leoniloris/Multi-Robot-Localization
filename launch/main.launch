@@ -6,9 +6,6 @@
   <node name="gazebo" pkg="gazebo_ros" type="gazebo"
    args="$(find multi_robot)/worlds/hospital.world" respawn="false" output="screen" />
 
-  <!-- start gui -->
-  <!--node name="gazebo_gui" pkg="gazebo" type="gui" respawn="false" output="screen"/-->
-
   <!-- include our robots -->
   <include file="$(find multi_robot)/launch/robots.launch">
     <arg name="n_robots" value="$(arg n_robots)"/>
