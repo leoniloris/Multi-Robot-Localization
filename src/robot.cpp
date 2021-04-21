@@ -36,7 +36,6 @@ geometry_msgs::Pose2D Robot::compute_delta_odometry(geometry_msgs::Point point, 
     current_pose_2d.theta = current_yaw;
     ROS_DEBUG_STREAM("current pose:" << current_pose_2d.x << " " << current_pose_2d.y<< " " << current_pose_2d.theta);
 
-
     if (previous_pose_2d.x == UNINITIALIZED) {
         previous_pose_2d = current_pose_2d;
     }
