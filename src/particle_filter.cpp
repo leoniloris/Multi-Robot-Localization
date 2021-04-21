@@ -1,6 +1,8 @@
+#include "particle_filter.h"
+
 #include <random>
 
-#include "particle_filter.h"
+#include "ros/ros.h"
 
 ParticleFilter::ParticleFilter(int n_particles, double std_x, double std_y, double std_theta, double max_x, double max_y, double max_theta) {
     particles.resize(n_particles);
@@ -10,8 +12,7 @@ ParticleFilter::ParticleFilter(int n_particles, double std_x, double std_y, doub
     std::uniform_real_distribution<double> distribution_y(0, max_y);
     std::uniform_real_distribution<double> distribution_theta(0, max_theta);
 
-
-    for(int i=0; i<n_particles; ++i){
+    for (int i = 0; i < n_particles; ++i) {
         Particle p = Particle{};
         p.id = i;
         p.x = distribution_x(generator);
@@ -21,4 +22,3 @@ ParticleFilter::ParticleFilter(int n_particles, double std_x, double std_y, doub
         particles[i] = p;
     }
 }
-
