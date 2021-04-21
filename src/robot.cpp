@@ -27,7 +27,7 @@ static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation) {
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_odometry(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
-    ROS_DEBUG_STREAM("previous pose:" << previous_pose_2d->x << " " << previous_pose_2d->y << " " << previous_pose_2d->theta);
+    ROS_INFO_STREAM("previous pose:" << previous_pose_2d->x << " " << previous_pose_2d->y << " " << previous_pose_2d->theta);
 
     double current_yaw = get_yaw_from_orientation(orientation);
     geometry_msgs::Pose2D current_pose_2d;
@@ -35,7 +35,7 @@ geometry_msgs::Pose2D Robot::compute_delta_odometry(geometry_msgs::Point point, 
     current_pose_2d.x = point.x;
     current_pose_2d.y = point.y;
     current_pose_2d.theta = current_yaw;
-    ROS_DEBUG_STREAM("current pose:" << current_pose_2d.x << " " << current_pose_2d.y << " " << current_pose_2d.theta);
+    ROS_INFO_STREAM("current pose:" << current_pose_2d.x << " " << current_pose_2d.y << " " << current_pose_2d.theta);
 
     if (previous_pose_2d == nullptr) {
         previous_pose_2d = new geometry_msgs::Pose2D(current_pose_2d);
@@ -51,14 +51,14 @@ geometry_msgs::Pose2D Robot::compute_delta_odometry(geometry_msgs::Point point, 
 
 void Robot::odometry_cb(const nav_msgs::Odometry::ConstPtr& odom) {
     geometry_msgs::Pose2D delta_pose_2d = compute_delta_odometry(odom->pose.pose.position, odom->pose.pose.orientation);
-    ROS_DEBUG_STREAM("delta pose:" << delta_pose_2d.x << " " << delta_pose_2d.y << " " << delta_pose_2d.theta);
+    ROS_INFO_STREAM("delta pose:" << delta_pose_2d.x << " " << delta_pose_2d.y << " " << delta_pose_2d.theta);
 }
 
 Robot::Robot(std::string robot_suffix, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_hanle;
 
-    particle_filter = new ParticleFilter(100, 2, 2, 0.01, 1415, 2026, 6.28318531);
+    particle_filter = new ParticleFilter(100, 1415, 2026, 6.28318531);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
