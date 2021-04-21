@@ -5,10 +5,9 @@
 #include <optional>
 
 #include "nav_msgs/Odometry.h"
+#include "particle_filter.h"
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
-
-#define UNINITIALIZED 0xffff
 
 class Robot {
    private:
@@ -21,7 +20,8 @@ class Robot {
 
     ros::Publisher broadcaster;
 
-    geometry_msgs::Pose2D previous_pose_2d;
+    geometry_msgs::Pose2D* previous_pose_2d = nullptr;
+    ParticleFilter* particle_filter = nullptr;
 
    public:
     Robot(std::string robot_suffix, int argc, char** argv);
