@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
   roscpp
   std_msgs
   message_generation
@@ -61,6 +60,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   particle.msg
+  particles.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -84,7 +84,6 @@ add_message_files(
 # )
 generate_messages(
   DEPENDENCIES
-  geometry_msgs
 )
 
 
@@ -125,7 +124,7 @@ catkin_package(
 )
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs roscpp std_msgs message_runtime
+  CATKIN_DEPENDS roscpp std_msgs message_runtime
 )
 
 

@@ -3,6 +3,9 @@
 #include <geometry_msgs/Pose2D.h>
 #include <tf/tf.h>
 
+#include <string>
+
+#include "multi_robot/particles.h"
 #include "nav_msgs/Odometry.h"
 #include "particle_filter.h"
 #include "ros/ros.h"
@@ -43,7 +46,7 @@ static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation) {
     tf::Matrix3x3 m(q);
     double _roll, _pitch, yaw;
     m.getRPY(_roll, _pitch, yaw);
-    ROS_INFO_STREAM("robot angle:" << yaw * 180 / PI);
+    ROS_DEBUG_STREAM("robot angle:" << yaw * 180 / PI);
 
     return yaw;
 }
@@ -57,12 +60,18 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom) {
         const double std_y = 1;
         const double std_angle = 0.01;
         particle_filter->move_particles(std_x, std_y, std_angle, delta_pose_2d.x, delta_pose_2d.y, delta_pose_2d.theta);
-        //// paaaarticle_filter->measure();
-        //// paaaarticle_filter->update_weights_from_measurements();
+        //// particle_filter->measure();
+        //// particle_filter->update_weights_from_measurements();
+    }
+    static int a =0;
+    if ((a++ % 10) == 0) {
+        broadcast_particles();
     }
 }
 
-Robot::Robot(std::string robot_suffix, int argc, char** argv) {
+Robot::Robot(uint8_t robot_index, int argc, char** argv) {
+    this->robot_index = robot_index;
+    std::string robot_suffix = std::to_string(robot_index);
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
     particle_filter = new ParticleFilter(1, 1415, 2026, 2 * PI);
@@ -72,13 +81,16 @@ Robot::Robot(std::string robot_suffix, int argc, char** argv) {
 
     laser_scan = node_handle.subscribe<sensor_msgs::LaserScan>(laser_topic, PUBSUB_QUEUE_SIZE, &Robot::laser_callback, this);
     odometry = node_handle.subscribe<nav_msgs::Odometry>(odometry_topic, PUBSUB_QUEUE_SIZE, &Robot::odometry_callback, this);
-    broadcaster = node_handle.advertise<std_msgs::String>("particles_broadcast", PUBSUB_QUEUE_SIZE);
+    broadcaster = node_handle.advertise<multi_robot::particles>("particles_broadcast", PUBSUB_QUEUE_SIZE);
 }
 
-//////// void Robot::broadcast_particles() {
-////////     paaaarticle_filter->encode_particles_to_publish();
-////////     broadcaster
-//////// }
+void Robot::broadcast_particles() {
+    ROS_INFO_STREAM("broadcasting particles");
+    multi_robot::particles particles;
+    particles.robot_index = robot_index;
+    particle_filter->encode_particles_to_publish(&particles);
+    broadcaster.publish(particles);
+}
 
 Robot::~Robot() {
     delete particle_filter;

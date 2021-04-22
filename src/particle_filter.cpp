@@ -3,6 +3,8 @@
 #include <cmath>
 #include <random>
 
+#include "multi_robot/particle.h"
+#include "multi_robot/particles.h"
 #include "ros/ros.h"
 
 ParticleFilter::ParticleFilter(uint16_t number_of_particles, double max_x, double max_y, double max_angle) {
@@ -28,33 +30,45 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles, double max_x, doubl
 }
 
 void ParticleFilter::move_particles(double std_x, double std_y, double std_angle, double delta_x, double delta_y, double delta_angle) {
-    for (uint16_t i = 0; i < n_particles; i++) {
-        Particle* p = &particles[i];
+    for (auto& p : particles) {
         move_particle(p, std_x, std_y, std_angle, delta_x, delta_y, delta_angle);
     }
 }
 
-void ParticleFilter::move_particle(Particle* particle,
+void ParticleFilter::move_particle(Particle& particle,
                                    double std_x, double std_y, double std_angle,
                                    double delta_x, double delta_y, double delta_angle) {
-    std::normal_distribution<double> distribution_x{particle->x + delta_x, std_x};
-    std::normal_distribution<double> distribution_y{particle->y + delta_y, std_y};
-    std::normal_distribution<double> distribution_angle{particle->angle + delta_angle, std_angle};
+    std::normal_distribution<double> distribution_x{particle.x + delta_x, std_x};
+    std::normal_distribution<double> distribution_y{particle.y + delta_y, std_y};
+    std::normal_distribution<double> distribution_angle{particle.angle + delta_angle, std_angle};
 
     const double new_x = distribution_x(random_number_generator);
     const double new_y = distribution_y(random_number_generator);
     const double new_angle = std::fmod(distribution_angle(random_number_generator), 2 * PI);  // wrap 360 degrees
 
-    if (!occupancy_grid->is_path_free(particle->x, particle->y, new_x, new_y)) {
+    if (!occupancy_grid->is_path_free(particle.x, particle.y, new_x, new_y)) {
         //// TODO: We can try to just put the weights to 0 and update the particle
         //// But right here right now, we're just strongly decreasing the weight of
         //// the particle and not updating it because it might be the case that the
         //// particle just didn't sampled well.
-        particle->weight *= 0.3;
+        particle.weight *= 0.3;
         return;
     }
 
-    particle->x = new_x;
-    particle->y = new_y;
-    particle->angle = new_angle;
+    particle.x = new_x;
+    particle.y = new_y;
+    particle.angle = new_angle;
+}
+
+void ParticleFilter::encode_particles_to_publish(multi_robot::particles* encoded_particles) {
+    encoded_particles->particles.clear();
+    for (auto& p : particles) {
+        multi_robot::particle particle{};
+        particle.x = p.x;
+        particle.y = p.y;
+        particle.angle = p.angle;
+        particle.weight = p.weight;
+        particle.id = p.id;
+        encoded_particles->particles.push_back(particle);
+    }
 }

@@ -14,6 +14,7 @@ class Robot {
     void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan);
     void odometry_callback(const nav_msgs::Odometry::ConstPtr& scan);
     geometry_msgs::Pose2D compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation);
+    uint8_t robot_index;
 
     ros::NodeHandle* node_handle;
 
@@ -26,6 +27,7 @@ class Robot {
 
    public:
     ParticleFilter* particle_filter = nullptr;
-    Robot(std::string robot_suffix, int argc, char** argv);
+    Robot(uint8_t robot_index, int argc, char** argv);
+    void broadcast_particles();
     ~Robot();
 };
