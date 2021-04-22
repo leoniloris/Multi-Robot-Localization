@@ -4,14 +4,12 @@ from queue import Queue, Empty
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
-import logging as log
 import numpy as np
 import rospy
 
 
 class MapServer:
     def __init__(self, particles_topic):
-        log.basicConfig(level=log.DEBUG)
         rospy.init_node("mapserver")
 
         self._message_queue = Queue()
@@ -47,7 +45,6 @@ class MapServer:
 
     def _handle_message(self, message):
         print(message)
-        log.info(message)
         self._remove_old_particles()
         # self.arrow = patches.FancyArrow(
         #     x, x, 15, 15, width=3, head_length=10, alpha=0.8, color="red"
@@ -55,7 +52,6 @@ class MapServer:
         # self._axis.add_patch(self.arrow)
 
     def _update_plot(self):
-        log.debug("Plot updated.")
         plt.draw()
         plt.pause(0.05)
 

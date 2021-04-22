@@ -7,16 +7,16 @@
 #include "multi_robot/particles.h"
 #include "ros/ros.h"
 
-ParticleFilter::ParticleFilter(uint16_t number_of_particles, double max_x, double max_y, double max_angle) {
+ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
     occupancy_grid = new OccupancyGrid("/home/leoni/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv");
     n_particles = number_of_particles;
 
     std::random_device rd;
     random_number_generator = std::mt19937(rd());
 
-    std::uniform_real_distribution<double> distribution_x(0, max_x);
-    std::uniform_real_distribution<double> distribution_y(0, max_y);
-    std::uniform_real_distribution<double> distribution_angle(0, max_angle);
+    std::uniform_real_distribution<double> distribution_x(0, occupancy_grid->n_rows);
+    std::uniform_real_distribution<double> distribution_y(0, occupancy_grid->n_columns);
+    std::uniform_real_distribution<double> distribution_angle(0, 2 * PI);
     for (uint16_t i = 0; i < n_particles; i++) {
         Particle p = Particle{};
         p.id = i;

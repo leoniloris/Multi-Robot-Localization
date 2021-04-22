@@ -28,7 +28,7 @@ class ParticleFilter {
     void move_particle(Particle& particle, double std_x, double std_y, double std_angle, double delta_x, double delta_y, double delta_angle);
 
    public:
-    ParticleFilter(uint16_t number_of_particles, double max_x, double max_y, double max_angle);
+    ParticleFilter(uint16_t number_of_particles);
     void move_particles(double std_x, double std_y, double std_angle, double delta_x, double delta_y, double delta_angle);
     void encode_particles_to_publish(multi_robot::particles* particles);
     ~ParticleFilter() { delete occupancy_grid; };

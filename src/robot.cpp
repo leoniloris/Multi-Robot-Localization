@@ -74,7 +74,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     std::string robot_suffix = std::to_string(robot_index);
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
-    particle_filter = new ParticleFilter(1, 1415, 2026, 2 * PI);
+    particle_filter = new ParticleFilter(3);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
