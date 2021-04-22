@@ -44,8 +44,9 @@ class MapServer:
             self._update_plot()
 
     def _handle_message(self, message):
-        print(message)
+        print(message.particles)
         self._remove_old_particles()
+        self._create_new_particles(message.particles[0])
         # self.arrow = patches.FancyArrow(
         #     x, x, 15, 15, width=3, head_length=10, alpha=0.8, color="red"
         # )
@@ -59,6 +60,8 @@ class MapServer:
         for _particle_type, particle in self._particles.items():
             particle.remove()
         self._particles.clear()
+
+    def _create_new_particles(self):
 
 
 import signal

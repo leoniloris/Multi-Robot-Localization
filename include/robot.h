@@ -9,6 +9,11 @@
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 
+enum ParticleType {
+    ROBOT,
+    PARTICLE,
+};
+
 class Robot {
    private:
     void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan);

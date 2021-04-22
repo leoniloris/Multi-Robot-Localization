@@ -5,6 +5,7 @@
 
 #include "multi_robot/particle.h"
 #include "multi_robot/particles.h"
+#include "robot.h"
 #include "ros/ros.h"
 
 ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
@@ -63,12 +64,13 @@ void ParticleFilter::move_particle(Particle& particle,
 void ParticleFilter::encode_particles_to_publish(multi_robot::particles* encoded_particles) {
     encoded_particles->particles.clear();
     for (auto& p : particles) {
-        multi_robot::particle particle{};
-        particle.x = p.x;
-        particle.y = p.y;
-        particle.angle = p.angle;
-        particle.weight = p.weight;
-        particle.id = p.id;
-        encoded_particles->particles.push_back(particle);
+        multi_robot::particle encoded_particle{};
+        encoded_particle.x = p.x;
+        encoded_particle.y = p.y;
+        encoded_particle.angle = p.angle;
+        encoded_particle.weight = p.weight;
+        encoded_particle.id = p.id;
+        encoded_particle.type = PARTICLE;
+        encoded_particles->particles.push_back(encoded_particle);
     }
 }
