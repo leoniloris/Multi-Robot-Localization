@@ -12,6 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
 )
 
+find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
+  roscpp
+  std_msgs
+  message_generation
+)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -51,6 +58,10 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message1.msg
 #   Message2.msg
 # )
+add_message_files(
+  FILES
+  particle.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -71,6 +82,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
 # )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+)
+
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -108,6 +124,11 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
+catkin_package(
+  CATKIN_DEPENDS geometry_msgs roscpp std_msgs message_runtime
+)
+
+
 ###########
 ## Build ##
 ###########
@@ -135,7 +156,8 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/multi_robot_node.cpp)
 add_executable(robot_node src/robot_node.cpp
                           src/robot.cpp
-                          src/particle_filter.cpp)
+                          src/particle_filter.cpp
+                          src/occupancy_grid.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

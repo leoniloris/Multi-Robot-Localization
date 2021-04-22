@@ -5,9 +5,9 @@
 
 #include "ros/ros.h"
 
-ParticleFilter::ParticleFilter(uint16_t n_particles, double max_x, double max_y, double max_angle) {
-    this->n_particles = n_particles;
-    particles.resize(n_particles);
+ParticleFilter::ParticleFilter(uint16_t number_of_particles, double max_x, double max_y, double max_angle) {
+    occupancy_grid = new OccupancyGrid("/home/leoni/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv");
+    n_particles = number_of_particles;
 
     std::random_device rd;
     random_number_generator = std::mt19937(rd());
@@ -15,7 +15,6 @@ ParticleFilter::ParticleFilter(uint16_t n_particles, double max_x, double max_y,
     std::uniform_real_distribution<double> distribution_x(0, max_x);
     std::uniform_real_distribution<double> distribution_y(0, max_y);
     std::uniform_real_distribution<double> distribution_angle(0, max_angle);
-
     for (uint16_t i = 0; i < n_particles; i++) {
         Particle p = Particle{};
         p.id = i;
@@ -23,7 +22,7 @@ ParticleFilter::ParticleFilter(uint16_t n_particles, double max_x, double max_y,
         p.y = distribution_y(random_number_generator);
         p.angle = distribution_angle(random_number_generator);
         p.weight = 1;
-        particles[i] = p;
+        particles.push_back(p);
         ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle << " id: " << p.id);
     }
 }
@@ -42,8 +41,20 @@ void ParticleFilter::move_particle(Particle* particle,
     std::normal_distribution<double> distribution_y{particle->y + delta_y, std_y};
     std::normal_distribution<double> distribution_angle{particle->angle + delta_angle, std_angle};
 
-    particle->x = distribution_x(random_number_generator);
-    particle->y = distribution_y(random_number_generator);
-    particle->angle = distribution_angle(random_number_generator);
-    particle->angle = std::fmod(particle->angle, 2 * PI);  // wrap 360 degrees
+    const double new_x = distribution_x(random_number_generator);
+    const double new_y = distribution_y(random_number_generator);
+    const double new_angle = std::fmod(distribution_angle(random_number_generator), 2 * PI);  // wrap 360 degrees
+
+    if (!occupancy_grid->is_path_free(particle->x, particle->y, new_x, new_y)) {
+        //// TODO: We can try to just put the weights to 0 and update the particle
+        //// But right here right now, we're just strongly decreasing the weight of
+        //// the particle and not updating it because it might be the case that the
+        //// particle just didn't sampled well.
+        particle->weight *= 0.3;
+        return;
+    }
+
+    particle->x = new_x;
+    particle->y = new_y;
+    particle->angle = new_angle;
 }

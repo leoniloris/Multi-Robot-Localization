@@ -1,15 +1,16 @@
 #include <ros/console.h>
 #include <stdint.h>
+
 #include <string>
 
+#include "occupancy_grid.h"
+#include "robot.h"
+#include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include "std_msgs/String.h"
-#include "ros/ros.h"
-#include "robot.h"
-
 
 static std::string parse_robot_index_from_arguments(char** argv) {
-    if(argv[1] == NULL){
+    if (argv[1] == NULL) {
         ROS_ERROR_STREAM("First argument (Robot index) was not privided or is invalid.");
         exit(1);
     }
@@ -29,5 +30,3 @@ int main(int argc, char** argv) {
 
     return 0;
 }
-
-
