@@ -1,21 +1,29 @@
 #pragma once
 
+#include <stdint.h>
+
+#include <random>
 #include <vector>
+
+#define PI 3.141592653589793238
 
 typedef struct _Particle {
     double x;
     double y;
     double angle;
     double weight;
-    int id;
+    uint16_t id;
 } Particle;
 
 class ParticleFilter {
-    int n_particles;
     std::vector<Particle> particles;
+    std::mt19937 random_number_generator;
+    uint16_t n_particles;
+
+    void move_particle(Particle* particle, double std_x, double std_y, double std_angle, double delta_x, double delta_y, double delta_angle);
 
    public:
-    ParticleFilter(int n_particles, double max_x, double max_y, double max_angle);
+    ParticleFilter(uint16_t n_particles, double max_x, double max_y, double max_angle);
     void move_particles(double std_x, double std_y, double std_angle, double delta_x, double delta_y, double delta_angle);
     ~ParticleFilter(){};
 };

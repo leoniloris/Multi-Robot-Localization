@@ -21,8 +21,7 @@ int main(int argc, char** argv) {
     std::string robot_index = parse_robot_index_from_arguments(argv);
     Robot robot(robot_index, argc, argv);
 
-
-    ros::Rate loop_hz(10);
+    ros::Rate loop_hz(2);
     while (ros::ok()) {
         ros::spinOnce();
         loop_hz.sleep();

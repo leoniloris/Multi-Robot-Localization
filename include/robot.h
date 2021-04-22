@@ -21,9 +21,9 @@ class Robot {
     ros::Publisher broadcaster;
 
     geometry_msgs::Pose2D* previous_pose_2d = nullptr;
-    ParticleFilter* particle_filter = nullptr;
 
    public:
+    ParticleFilter* particle_filter = nullptr;
     Robot(std::string robot_suffix, int argc, char** argv);
     ~Robot();
 };
