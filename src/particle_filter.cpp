@@ -17,7 +17,8 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
 
     std::uniform_real_distribution<double> distribution_x(0, occupancy_grid->n_rows);
     std::uniform_real_distribution<double> distribution_y(0, occupancy_grid->n_columns);
-    std::uniform_real_distribution<double> distribution_angle(0, 2 * PI);
+    std::uniform_real_distribution<double> distribution_angle((-1.5508 + 2 * PI), (-1.5808 + 2 * PI));
+    // std::uniform_real_distribution<double> distribution_angle(0, 2 * PI);
     for (uint16_t i = 0; i < n_particles; i++) {
         Particle p = Particle{};
         p.id = i;

@@ -53,12 +53,12 @@ static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation) {
 
 void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom) {
     geometry_msgs::Pose2D delta_pose_2d = compute_delta_pose(odom->pose.pose.position, odom->pose.pose.orientation);
-    ROS_DEBUG_STREAM("delta pose:" << delta_pose_2d.x << " " << delta_pose_2d.y << " " << delta_pose_2d.theta);
+    ROS_INFO_STREAM("delta pose:" << delta_pose_2d.x << " " << delta_pose_2d.y << " " << delta_pose_2d.theta);
     {
         // TODO: estimate good odometry std's
-        const double std_x = 1;
-        const double std_y = 1;
-        const double std_angle = 0.01;
+        const double std_x = 0.01;
+        const double std_y = 0.01;
+        const double std_angle = 0;
         particle_filter->move_particles(std_x, std_y, std_angle, delta_pose_2d.x, delta_pose_2d.y, delta_pose_2d.theta);
         //// particle_filter->measure();
         //// particle_filter->update_weights_from_measurements();
@@ -74,7 +74,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     std::string robot_suffix = std::to_string(robot_index);
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
-    particle_filter = new ParticleFilter(3);
+    particle_filter = new ParticleFilter(1);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -85,7 +85,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 }
 
 void Robot::broadcast_particles() {
-    ROS_INFO_STREAM("broadcasting particles");
+    // ROS_INFO_STREAM("broadcasting particles");
     multi_robot::particles particles;
     particles.robot_index = robot_index;
     particle_filter->encode_particles_to_publish(&particles);

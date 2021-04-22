@@ -31,8 +31,8 @@ OccupancyGrid::OccupancyGrid(const std::string& path) {
     }
     f.close();
 
-    n_columns = grid[0].size();
-    n_rows = grid.size();
+    n_rows = grid[0].size();
+    n_columns = grid.size();
     ROS_INFO_STREAM("occupancy grid loaded: " << n_rows << " by " << n_columns << "pixels.");
 }
 
@@ -50,7 +50,6 @@ bool OccupancyGrid::is_path_free(double x1, double y1, double x2, double y2) {
         if (cell_to_check_y >= n_columns || cell_to_check_x >= n_rows) {
             return false;
         }
-
         const bool is_cell_occupied = grid[cell_to_check_y][cell_to_check_x] == 1;
         if (is_cell_occupied) {
             return false;

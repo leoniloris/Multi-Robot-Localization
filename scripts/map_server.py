@@ -54,12 +54,13 @@ class MapServer:
             self._update_plot()
 
     def _handle_message(self, message):
+        print(message.particles)
         self._remove_old_particles()
         self._create_new_particles(message.particles, message.robot_index)
 
     def _update_plot(self):
         plt.draw()
-        plt.pause(0.05)
+        plt.pause(0.001)
 
     def _remove_old_particles(self):
         for _particle_type, particle in self._particles.items():
@@ -69,7 +70,9 @@ class MapServer:
     def _create_new_particles(self, particles_msg, robot_index):
         for p in particles_msg:
             if ParticleType(p.type) == ParticleType.PARTICLE:
-                particle_marker = patches.FancyArrow(p.x, p.y, 15, 15, width=3, head_length=10, alpha=0.8, color="red")
+                dx = 15*np.cos(np.pi/2 - p.angle)
+                dy = 15*np.sin(np.pi/2 - p.angle)
+                particle_marker = patches.FancyArrow(p.x, p.y, dx, dy, width=3, head_length=10, alpha=0.8, color="red")
             elif ParticleType(p.type) == ParticleType.ROBOT:
                 particle_marker = patches.Circle((p.x, p.y), 10, alpha=0.8, color="blue")
             else:
