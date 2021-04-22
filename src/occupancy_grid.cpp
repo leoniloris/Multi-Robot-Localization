@@ -39,15 +39,20 @@ OccupancyGrid::OccupancyGrid(const std::string& path) {
 bool OccupancyGrid::is_path_free(double x1, double y1, double x2, double y2) {
     uint16_t path_length = (uint16_t)max(abs(x2 - x1), abs(y2 - y1));
 
-    double cell_to_check_x;
-    double cell_to_check_y;
+    uint16_t cell_to_check_x;
+    uint16_t cell_to_check_y;
 
     for (uint16_t path_idx = 1; path_idx <= path_length; path_idx++) {
-        const double path_location = path_idx / path_length;
-        cell_to_check_x = x1 + (x2-x1) * path_location;
-        cell_to_check_y = y1 + (y2-y1) * path_location;
-        const uint8_t cell = grid[(uint16_t)cell_to_check_y][(uint16_t)cell_to_check_x];
-        if (cell == 1) {
+        const double path_location = (double)path_idx / (double)path_length;
+        cell_to_check_x = (uint16_t) (x1 + (x2-x1) * path_location);
+        cell_to_check_y = (uint16_t) (y1 + (y2-y1) * path_location);
+
+        if (cell_to_check_y >= n_columns || cell_to_check_x >= n_rows) {
+            return false;
+        }
+
+        const bool is_cell_occupied = grid[cell_to_check_y][cell_to_check_x] == 1;
+        if (is_cell_occupied) {
             return false;
         }
     }
