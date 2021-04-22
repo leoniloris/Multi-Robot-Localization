@@ -1,11 +1,21 @@
 from multi_robot.msg import particles as ParticlesMessageType
 from threading import Event, Thread
 from queue import Queue, Empty
+from enum import Enum
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
+import signal
 import rospy
+import time
+import sys
+
+
+# This OUGHT to be the same as the one defined on `robot.h`
+class ParticleType(Enum):
+    ROBOT = 0
+    PARTICLE = 1
 
 
 class MapServer:
@@ -44,13 +54,8 @@ class MapServer:
             self._update_plot()
 
     def _handle_message(self, message):
-        print(message.particles)
         self._remove_old_particles()
-        self._create_new_particles(message.particles[0])
-        # self.arrow = patches.FancyArrow(
-        #     x, x, 15, 15, width=3, head_length=10, alpha=0.8, color="red"
-        # )
-        # self._axis.add_patch(self.arrow)
+        self._create_new_particles(message.particles, message.robot_index)
 
     def _update_plot(self):
         plt.draw()
@@ -61,12 +66,18 @@ class MapServer:
             particle.remove()
         self._particles.clear()
 
-    def _create_new_particles(self):
+    def _create_new_particles(self, particles_msg, robot_index):
+        for p in particles_msg:
+            if ParticleType(p.type) == ParticleType.PARTICLE:
+                particle_marker = patches.FancyArrow(p.x, p.y, 15, 15, width=3, head_length=10, alpha=0.8, color="red")
+            elif ParticleType(p.type) == ParticleType.ROBOT:
+                particle_marker = patches.Circle((p.x, p.y), 10, alpha=0.8, color="blue")
+            else:
+                raise Exception("Invalid particle type")
 
+            self._particles[f"{p.id}-{robot_index}"] = particle_marker
+            self._axis.add_patch(particle_marker)
 
-import signal
-import sys
-import time
 
 if __name__ == "__main__":
     mapserver = MapServer("particles_broadcast")
