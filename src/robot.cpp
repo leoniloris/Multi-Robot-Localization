@@ -45,7 +45,7 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom) {
         //// particle_filter->update_weights_from_measurements();
     }
     static int a = 0;
-    if ((a++ % 10) == 0) {
+    if ((a++ % 5) == 0) {
         broadcast_particles();
     }
 }
@@ -75,7 +75,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     std::string robot_suffix = std::to_string(robot_index);
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
-    particle_filter = new ParticleFilter(1);
+    particle_filter = new ParticleFilter(100);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";

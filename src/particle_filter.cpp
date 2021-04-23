@@ -1,6 +1,6 @@
 #include "particle_filter.h"
 
-#include <cmath>
+// #include <cmath>
 #include <random>
 
 #include "multi_robot/particle.h"
@@ -8,28 +8,27 @@
 #include "robot.h"
 #include "ros/ros.h"
 
+using namespace std;
+
 ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
-    const std::string home_folder = std::string(std::getenv("HOME"));
-    const std::string grid_path = std::string("/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv");
+    const string home_folder = string(getenv("HOME"));
+    const string grid_path = string("/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv");
 
     occupancy_grid = new OccupancyGrid(home_folder + grid_path);
     n_particles = number_of_particles;
 
-    std::random_device rd;
-    random_number_generator = std::mt19937(rd());
+    random_device rd;
+    random_number_generator = mt19937(rd());
 
-    std::uniform_real_distribution<double> distribution_x(0, occupancy_grid->height_meters());
-    std::uniform_real_distribution<double> distribution_y(0, occupancy_grid->width_meters());
-    std::uniform_real_distribution<double> distribution_angle(0, 2 * PI);
+    uniform_real_distribution<double> distribution_x(0, occupancy_grid->height_meters());
+    uniform_real_distribution<double> distribution_y(0, occupancy_grid->width_meters());
+    uniform_real_distribution<double> distribution_angle(0, 2 * PI);
     for (uint16_t i = 0; i < n_particles; i++) {
         Particle p = Particle{};
         p.id = i;
-        // p.x = distribution_x(random_number_generator);
-        // p.y = distribution_y(random_number_generator);
-        // p.angle = distribution_angle(random_number_generator);
-        p.x = 1;
-        p.y = 1;
-        p.angle = 0;
+        p.x = distribution_x(random_number_generator);
+        p.y = distribution_y(random_number_generator);
+        p.angle = distribution_angle(random_number_generator);
         p.weight = 1;
         particles.push_back(p);
         ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle << " id: " << p.id);
@@ -45,13 +44,17 @@ void ParticleFilter::move_particles(double std_x, double std_y, double std_angle
 void ParticleFilter::move_particle(Particle& particle,
                                    double std_x, double std_y, double std_angle,
                                    double delta_x, double delta_y, double delta_angle) {
-    std::normal_distribution<double> distribution_x{particle.x + delta_x, std_x};
-    std::normal_distribution<double> distribution_y{particle.y + delta_y, std_y};
+    const double displacement = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
+    const double delta_x_with_angular_movement = (displacement / delta_angle) * (sin(particle.angle + delta_angle) - sin(particle.angle));
+    const double delta_y_with_angular_movement = (displacement / delta_angle) * (cos(particle.angle) - cos(particle.angle + delta_angle));
+
+    std::normal_distribution<double> distribution_x{particle.x + delta_x_with_angular_movement, std_x};
+    std::normal_distribution<double> distribution_y{particle.y + delta_y_with_angular_movement, std_y};
     std::normal_distribution<double> distribution_angle{particle.angle + delta_angle, std_angle};
 
     const double new_x = distribution_x(random_number_generator);
     const double new_y = distribution_y(random_number_generator);
-    const double new_angle = std::fmod(distribution_angle(random_number_generator), 2 * PI); // wrap 360 degrees
+    const double new_angle = std::fmod(distribution_angle(random_number_generator), 2 * PI);  // wrap 360 degrees
 
     if (!occupancy_grid->is_path_free(particle.x, particle.y, new_x, new_y)) {
         //// TODO: We can try to just put the weights to 0 and update the particle
