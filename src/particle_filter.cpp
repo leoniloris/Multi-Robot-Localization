@@ -9,7 +9,10 @@
 #include "ros/ros.h"
 
 ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
-    occupancy_grid = new OccupancyGrid("/home/leoni/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv");
+    const std::string home_folder = std::string(std::getenv("HOME"));
+    const std::string grid_path = std::string("/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv");
+
+    occupancy_grid = new OccupancyGrid(home_folder + grid_path);
     n_particles = number_of_particles;
 
     std::random_device rd;
@@ -17,8 +20,7 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
 
     std::uniform_real_distribution<double> distribution_x(0, occupancy_grid->n_rows);
     std::uniform_real_distribution<double> distribution_y(0, occupancy_grid->n_columns);
-    std::uniform_real_distribution<double> distribution_angle((-1.5508 + 2 * PI), (-1.5808 + 2 * PI));
-    // std::uniform_real_distribution<double> distribution_angle(0, 2 * PI);
+    std::uniform_real_distribution<double> distribution_angle(0, 2 * PI);
     for (uint16_t i = 0; i < n_particles; i++) {
         Particle p = Particle{};
         p.id = i;
@@ -62,16 +64,16 @@ void ParticleFilter::move_particle(Particle& particle,
     particle.angle = new_angle;
 }
 
-void ParticleFilter::encode_particles_to_publish(multi_robot::particles* encoded_particles) {
-    encoded_particles->particles.clear();
+void ParticleFilter::encode_particles_to_publish(multi_robot::particles& encoded_particles) {
+    encoded_particles.particles.clear();
     for (auto& p : particles) {
-        multi_robot::particle encoded_particle{};
+        multi_robot::particle encoded_particle;
         encoded_particle.x = p.x;
         encoded_particle.y = p.y;
         encoded_particle.angle = p.angle;
         encoded_particle.weight = p.weight;
         encoded_particle.id = p.id;
         encoded_particle.type = PARTICLE;
-        encoded_particles->particles.push_back(encoded_particle);
+        encoded_particles.particles.push_back(encoded_particle);
     }
 }

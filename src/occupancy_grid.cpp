@@ -12,11 +12,19 @@
 
 using namespace std;
 
+// center: row 709 column 1361
+
+// y (columns) scale: 7 [meters] per 273 [cells|columns]
+#define COLUMN_CELLS_PER_METER 273.0 / 7.0
+
+// x (rows) scale: 3.5 [meters] per 198 [cells|rows]
+#define ROW_CELLS_PER_METER 273.0 / 7.0
+
 OccupancyGrid::OccupancyGrid(const std::string& path) {
     string line;
     ifstream f(path.c_str());
     if (!f.is_open()) {
-        ROS_ERROR_STREAM("error while opening occupancy array");
+        ROS_ERROR_STREAM("error while opening occupancy grid");
         exit(1);
     }
 
@@ -31,25 +39,32 @@ OccupancyGrid::OccupancyGrid(const std::string& path) {
     }
     f.close();
 
-    n_rows = grid[0].size();
-    n_columns = grid.size();
-    ROS_INFO_STREAM("occupancy grid loaded: " << n_rows << " by " << n_columns << "pixels.");
+    n_rows = grid.size();
+    n_columns = grid[0].size();
+    ROS_INFO_STREAM("occupancy grid loaded: " << n_rows << " rows by " << n_columns << " columns (cells).");
 }
 
-bool OccupancyGrid::is_path_free(double x1, double y1, double x2, double y2) {
-    uint16_t path_length = (uint16_t)max(abs(x2 - x1), abs(y2 - y1));
+bool OccupancyGrid::is_path_free(double x1_meters, double y1_meters, double x2_meters, double y2_meters) {
+    const uint16_t x1_cells = x1_meters * ROW_CELLS_PER_METER;
+    const uint16_t y1_cells = y1_meters * COLUMN_CELLS_PER_METER;
+    const uint16_t x2_cells = x2_meters * ROW_CELLS_PER_METER;
+    const uint16_t y2_cells = y2_meters * COLUMN_CELLS_PER_METER;
+
+    const uint16_t n_cells_to_check = max(abs(x2_cells - x1_cells), abs(y2_cells - y1_cells));
 
     uint16_t cell_to_check_x;
     uint16_t cell_to_check_y;
 
-    for (uint16_t path_idx = 1; path_idx <= path_length; path_idx++) {
-        const double path_location = (double)path_idx / (double)path_length;
-        cell_to_check_x = (uint16_t) (x1 + (x2-x1) * path_location);
-        cell_to_check_y = (uint16_t) (y1 + (y2-y1) * path_location);
+    for (uint16_t cell_idx_in_path = 1; cell_idx_in_path <= n_cells_to_check; cell_idx_in_path++) {
+        const double path_proportion_to_finish = (double)cell_idx_in_path / (double)n_cells_to_check;
+        cell_to_check_x = x1_cells + (uint16_t)((x2_cells - x1_cells) * path_proportion_to_finish);
+        cell_to_check_y = y1_cells + (uint16_t)((y2_cells - y1_cells) * path_proportion_to_finish);
 
-        if (cell_to_check_y >= n_columns || cell_to_check_x >= n_rows) {
+        const bool is_cell_out_of_map = (cell_to_check_y >= n_columns) || (cell_to_check_x >= n_rows);
+        if (is_cell_out_of_map) {
             return false;
         }
+
         const bool is_cell_occupied = grid[cell_to_check_y][cell_to_check_x] == 1;
         if (is_cell_occupied) {
             return false;

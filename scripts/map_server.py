@@ -10,6 +10,7 @@ import signal
 import rospy
 import time
 import sys
+import os
 
 
 # This OUGHT to be the same as the one defined on `robot.h`
@@ -25,7 +26,7 @@ class MapServer:
         self._message_queue = Queue()
         self.shutdown = Event()
         self._setup_map_plot()
-        self._particles = {}
+        self._particles_marker = {}
 
         rospy.Subscriber(
             particles_topic,
@@ -35,7 +36,7 @@ class MapServer:
 
     def _setup_map_plot(self):
         self._occupancy_grid = np.loadtxt(
-            "/home/leoni/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv",
+            os.environ["HOME"] + "/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv",
             delimiter=",",
         )
 
@@ -54,7 +55,7 @@ class MapServer:
             self._update_plot()
 
     def _handle_message(self, message):
-        print(message.particles)
+        # print(message.particles)
         self._remove_old_particles()
         self._create_new_particles(message.particles, message.robot_index)
 
@@ -63,22 +64,24 @@ class MapServer:
         plt.pause(0.001)
 
     def _remove_old_particles(self):
-        for _particle_type, particle in self._particles.items():
-            particle.remove()
-        self._particles.clear()
+        for _particle_type, particle_marker in self._particles_marker.items():
+            particle_marker.remove()
+        # self._axis.patches = []
+        self._particles_marker.clear()
 
     def _create_new_particles(self, particles_msg, robot_index):
         for p in particles_msg:
             if ParticleType(p.type) == ParticleType.PARTICLE:
+                print(p.y, p.x)
                 dx = 15*np.cos(np.pi/2 - p.angle)
                 dy = 15*np.sin(np.pi/2 - p.angle)
-                particle_marker = patches.FancyArrow(p.x, p.y, dx, dy, width=3, head_length=10, alpha=0.8, color="red")
+                particle_marker = patches.FancyArrow(p.y, p.x, dx, dy, width=3, head_length=10, alpha=0.8, color="red")
             elif ParticleType(p.type) == ParticleType.ROBOT:
-                particle_marker = patches.Circle((p.x, p.y), 10, alpha=0.8, color="blue")
+                particle_marker = patches.Circle((p.y, p.x), 10, alpha=0.8, color="blue")
             else:
                 raise Exception("Invalid particle type")
 
-            self._particles[f"{p.id}-{robot_index}"] = particle_marker
+            self._particles_marker[f"{p.id}-{robot_index}"] = particle_marker
             self._axis.add_patch(particle_marker)
 
 
