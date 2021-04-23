@@ -20,6 +20,6 @@ class OccupancyGrid {
     OccupancyGrid(const std::string& path);
     ~OccupancyGrid(){};
     bool is_path_free(double x1_meters, double y1_meters, double x2_meters, double y2_meters);
-    double width_meters() { return n_columns / (COLUMN_CELLS_PER_METER); };
-    double height_meters() { return n_rows / (ROW_CELLS_PER_METER); };
+    double width_meters() { return (double)n_columns / (COLUMN_CELLS_PER_METER); };
+    double height_meters() { return (double)n_rows / (ROW_CELLS_PER_METER); };
 };

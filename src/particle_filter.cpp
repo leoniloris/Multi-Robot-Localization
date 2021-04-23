@@ -48,7 +48,7 @@ void ParticleFilter::move_particle(Particle& particle,
 
     const double new_x = distribution_x(random_number_generator);
     const double new_y = distribution_y(random_number_generator);
-    const double new_angle = std::fmod(distribution_angle(random_number_generator), 2 * PI);  // wrap 360 degrees
+    const double new_angle = std::fmod(distribution_angle(random_number_generator), 2 * PI); // wrap 360 degrees
 
     if (!occupancy_grid->is_path_free(particle.x, particle.y, new_x, new_y)) {
         //// TODO: We can try to just put the weights to 0 and update the particle

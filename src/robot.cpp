@@ -33,7 +33,7 @@ static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation) {
 
 void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom) {
     geometry_msgs::Pose2D delta_pose_2d = compute_delta_pose(odom->pose.pose.position, odom->pose.pose.orientation);
-    ROS_INFO_STREAM("delta pose:" << delta_pose_2d.x << " " << delta_pose_2d.y << " " << delta_pose_2d.theta);
+    ROS_DEBUG_STREAM("delta pose:" << delta_pose_2d.x << " " << delta_pose_2d.y << " " << delta_pose_2d.theta);
     {
         // TODO: estimate good odometry std's.
         const double std_x = 0.01;
