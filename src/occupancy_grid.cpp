@@ -18,7 +18,7 @@ using namespace std;
 #define COLUMN_CELLS_PER_METER 273.0 / 7.0
 
 // x (rows) scale: 3.5 [meters] per 198 [cells|rows]
-#define ROW_CELLS_PER_METER 273.0 / 7.0
+#define ROW_CELLS_PER_METER 198.0 / 3.5
 
 OccupancyGrid::OccupancyGrid(const std::string& path) {
     string line;
@@ -57,6 +57,7 @@ bool OccupancyGrid::is_path_free(double x1_meters, double y1_meters, double x2_m
 
     for (uint16_t cell_idx_in_path = 1; cell_idx_in_path <= n_cells_to_check; cell_idx_in_path++) {
         const double path_proportion_to_finish = (double)cell_idx_in_path / (double)n_cells_to_check;
+
         cell_to_check_x = x1_cells + (uint16_t)((x2_cells - x1_cells) * path_proportion_to_finish);
         cell_to_check_y = y1_cells + (uint16_t)((y2_cells - y1_cells) * path_proportion_to_finish);
 
