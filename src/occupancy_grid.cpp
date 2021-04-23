@@ -14,12 +14,6 @@ using namespace std;
 
 // center: row 709 column 1361
 
-// y (columns) scale: 7 [meters] per 273 [cells|columns]
-#define COLUMN_CELLS_PER_METER 273.0 / 7.0
-
-// x (rows) scale: 3.5 [meters] per 198 [cells|rows]
-#define ROW_CELLS_PER_METER 198.0 / 3.5
-
 OccupancyGrid::OccupancyGrid(const std::string& path) {
     string line;
     ifstream f(path.c_str());

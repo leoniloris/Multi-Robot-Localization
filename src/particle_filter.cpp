@@ -18,8 +18,8 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
     std::random_device rd;
     random_number_generator = std::mt19937(rd());
 
-    std::uniform_real_distribution<double> distribution_x(0, occupancy_grid->n_rows);
-    std::uniform_real_distribution<double> distribution_y(0, occupancy_grid->n_columns);
+    std::uniform_real_distribution<double> distribution_x(0, occupancy_grid->height_meters());
+    std::uniform_real_distribution<double> distribution_y(0, occupancy_grid->width_meters());
     std::uniform_real_distribution<double> distribution_angle(0, 2 * PI);
     for (uint16_t i = 0; i < n_particles; i++) {
         Particle p = Particle{};
