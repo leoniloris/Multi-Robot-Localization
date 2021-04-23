@@ -24,9 +24,12 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
     for (uint16_t i = 0; i < n_particles; i++) {
         Particle p = Particle{};
         p.id = i;
-        p.x = distribution_x(random_number_generator);
-        p.y = distribution_y(random_number_generator);
-        p.angle = distribution_angle(random_number_generator);
+        // p.x = distribution_x(random_number_generator);
+        // p.y = distribution_y(random_number_generator);
+        // p.angle = distribution_angle(random_number_generator);
+        p.x = 1;
+        p.y = 1;
+        p.angle = 0;
         p.weight = 1;
         particles.push_back(p);
         ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle << " id: " << p.id);

@@ -5,11 +5,11 @@
 #include <string>
 #include <vector>
 
-// y (columns) scale: 7 [meters] per 273 [cells|columns]
-#define COLUMN_CELLS_PER_METER (273.0 / 7.0)
+// y (columns) scale: 23 [meters] per 895 [cells|columns]
+#define COLUMN_CELLS_PER_METER (895.0 / 23.0)
 
-// x (rows) scale: 3.5 [meters] per 198 [cells|rows]
-#define ROW_CELLS_PER_METER (198.0 / 3.5)
+// x (rows) scale: 13 [meters] per 733 [cells|rows]
+#define ROW_CELLS_PER_METER (733.0 / 13.0)
 
 class OccupancyGrid {
     std::vector<std::vector<uint8_t>> grid;

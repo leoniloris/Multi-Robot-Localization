@@ -13,7 +13,9 @@ import sys
 import os
 
 
-# This OUGHT to be the same as the one defined on `robot.h`
+# the following constants OUGHT to be the same as the one defined on `robot.h` and `occupancy_grid.h`
+COLUMN_CELLS_PER_METER = (895.0 / 23.0) # y
+ROW_CELLS_PER_METER = (733.0 / 13.0) # x
 class ParticleType(Enum):
     ROBOT = 0
     PARTICLE = 1
@@ -36,7 +38,8 @@ class MapServer:
 
     def _setup_map_plot(self):
         self._occupancy_grid = np.loadtxt(
-            os.environ["HOME"] + "/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv",
+            os.environ["HOME"] +
+            "/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv",
             delimiter=",",
         )
 
@@ -71,19 +74,29 @@ class MapServer:
 
     def _create_new_particles(self, particles_msg, robot_index):
         for p in particles_msg:
-            if ParticleType(p.type) == ParticleType.PARTICLE:
-                print(p.y, p.x)
-                dx = 15*np.cos(np.pi/2 - p.angle)
-                dy = 15*np.sin(np.pi/2 - p.angle)
-                particle_marker = patches.FancyArrow(p.y, p.x, dx, dy, width=3, head_length=10, alpha=0.8, color="red")
-            elif ParticleType(p.type) == ParticleType.ROBOT:
-                particle_marker = patches.Circle((p.y, p.x), 10, alpha=0.8, color="blue")
-            else:
-                raise Exception("Invalid particle type")
+            self._create_new_particle(p, robot_index)
 
-            self._particles_marker[f"{p.id}-{robot_index}"] = particle_marker
-            self._axis.add_patch(particle_marker)
+    def _create_new_particle(self, particle, robot_index):
+        # INFO: swapped x and y, since that's the way the map is generated in gazebo.
+        y_cells = particle.x * ROW_CELLS_PER_METER
+        x_cells = particle.y * COLUMN_CELLS_PER_METER
+        angle = particle.angle
+        particle_type = particle.type
 
+        particle_marker = self._create_particle_marker(x_cells, y_cells, angle, particle_type)
+
+        self._particles_marker[f"{particle.id}-{robot_index}"] = particle_marker
+        self._axis.add_patch(particle_marker)
+
+    def _create_particle_marker(self, x_cells, y_cells, angle, particle_type):
+        if ParticleType(particle_type) == ParticleType.PARTICLE:
+            dx = 15*np.cos(np.pi/2 - angle)
+            dy = 15*np.sin(np.pi/2 - angle)
+            return patches.FancyArrow(x_cells, y_cells, dx, dy, width=3, head_length=10, alpha=0.8, color="red")
+        elif ParticleType(particle_type) == ParticleType.ROBOT:
+            return patches.Circle((x_cells, y_cells), 10, alpha=0.8, color="blue")
+        else:
+            raise Exception("Invalid particle type")
 
 if __name__ == "__main__":
     mapserver = MapServer("particles_broadcast")

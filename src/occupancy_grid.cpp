@@ -44,7 +44,6 @@ bool OccupancyGrid::is_path_free(double x1_meters, double y1_meters, double x2_m
     const uint16_t x2_cells = x2_meters * ROW_CELLS_PER_METER;
     const uint16_t y2_cells = y2_meters * COLUMN_CELLS_PER_METER;
 
-
     const uint16_t n_cells_to_check = max(abs(x2_cells - x1_cells), abs(y2_cells - y1_cells));
     uint16_t cell_to_check_x;
     uint16_t cell_to_check_y;
