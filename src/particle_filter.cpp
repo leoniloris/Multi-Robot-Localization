@@ -10,6 +10,8 @@
 
 using namespace std;
 
+#define MEASUREMENT_STD 0.1
+
 ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
     const string home_folder = string(getenv("HOME"));
     const string grid_path = string("/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv");
@@ -36,22 +38,20 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
     }
 }
 
-void ParticleFilter::move_particles(double std_x, double std_y, double std_angle, double delta_x, double delta_y, double delta_angle) {
+void ParticleFilter::move_particles(double delta_x, double delta_y, double delta_angle) {
     for (auto& p : particles) {
-        move_particle(p, std_x, std_y, std_angle, delta_x, delta_y, delta_angle);
+        move_particle(p, delta_x, delta_y, delta_angle);
     }
 }
 
-void ParticleFilter::move_particle(Particle& particle,
-                                   double std_x, double std_y, double std_angle,
-                                   double delta_x, double delta_y, double delta_angle) {
+void ParticleFilter::move_particle(Particle& particle, double delta_x, double delta_y, double delta_angle) {
     const double displacement = L2_DISTANCE(delta_x, delta_y);
     const double delta_x_with_angular_movement = (displacement / delta_angle) * (sin(particle.angle + delta_angle) - sin(particle.angle));
     const double delta_y_with_angular_movement = (displacement / delta_angle) * (cos(particle.angle) - cos(particle.angle + delta_angle));
 
-    normal_distribution<double> distribution_x{particle.x + delta_x_with_angular_movement, std_x};
-    normal_distribution<double> distribution_y{particle.y + delta_y_with_angular_movement, std_y};
-    normal_distribution<double> distribution_angle{particle.angle + delta_angle, std_angle};
+    normal_distribution<double> distribution_x{particle.x + delta_x_with_angular_movement, X_STD_ODOMETRY};
+    normal_distribution<double> distribution_y{particle.y + delta_y_with_angular_movement, Y_STD_ODOMETRY};
+    normal_distribution<double> distribution_angle{particle.angle + delta_angle, ANGLE_STD_ODOMETRY};
 
     const double new_x = distribution_x(random_number_generator);
     const double new_y = distribution_y(random_number_generator);
@@ -87,7 +87,10 @@ void ParticleFilter::encode_particles_to_publish(multi_robot::particles& encoded
 
 void ParticleFilter::estimate_measurements() {
     // Laser-based measurement.
+    normal_distribution<double> distribution{0, MEASUREMENT_STD};
+
     for (auto& p : particles) {
-        p.measurement = occupancy_grid->distance_until_obstacle(p.x, p.y, p.angle);
+        const double measurement_noise = distribution(random_number_generator);
+        p.measurement = occupancy_grid->distance_until_obstacle(p.x, p.y, p.angle) + measurement_noise;
     }
 }

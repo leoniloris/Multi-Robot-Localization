@@ -26,10 +26,7 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     geometry_msgs::Pose2D delta_pose_2d_meters = compute_delta_pose(odom_meters->pose.pose.position, odom_meters->pose.pose.orientation);
     geometry_msgs::Pose2D delta_pose_2d_cells = meters_to_cells(delta_pose_2d_meters);
 
-    static const double std_x = 0.1;
-    static const double std_y = 0.1;
-    static const double std_angle = 0.0002;
-    particle_filter->move_particles(std_x, std_y, std_angle, delta_pose_2d_cells.x, delta_pose_2d_cells.y, delta_pose_2d_cells.theta);
+    particle_filter->move_particles(delta_pose_2d_cells.x, delta_pose_2d_cells.y, delta_pose_2d_cells.theta);
     particle_filter->estimate_measurements();
     // TODO: compute weights from measurements. particle_filter->update_weights_from_measurements();
     broadcast_particles();

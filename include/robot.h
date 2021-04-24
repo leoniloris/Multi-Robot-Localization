@@ -9,6 +9,10 @@
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 
+#define X_STD_ODOMETRY 0.1
+#define Y_STD_ODOMETRY 0.1
+#define ANGLE_STD_ODOMETRY 0.0002
+
 enum ParticleType {
     ROBOT,
     PARTICLE,
