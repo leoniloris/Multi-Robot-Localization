@@ -1,5 +1,6 @@
 #include "occupancy_grid.h"
 
+#include <geometry_msgs/Pose2D.h>
 #include <stdint.h>
 
 #include <fstream>
@@ -8,11 +9,19 @@
 #include <string>
 #include <vector>
 
+#include "math_utilities.h"
 #include "ros/ros.h"
 
 using namespace std;
 
 // center: row 709 column 1361
+
+geometry_msgs::Pose2D meters_to_cells(geometry_msgs::Pose2D pose_meters) {
+    geometry_msgs::Pose2D pose_cells;
+    pose_cells.x = pose.x * ROW_CELLS_PER_METER;
+    pose_cells.y = pose.y * COLUMN_CELLS_PER_METER;
+    return pose_cells;
+}
 
 OccupancyGrid::OccupancyGrid(const std::string& path) {
     string line;
@@ -38,31 +47,42 @@ OccupancyGrid::OccupancyGrid(const std::string& path) {
     ROS_INFO_STREAM("occupancy grid loaded: " << n_rows << " rows by " << n_columns << " columns (cells).");
 }
 
-bool OccupancyGrid::is_path_free(double x1_meters, double y1_meters, double x2_meters, double y2_meters) {
-    const uint16_t x1_cells = x1_meters * ROW_CELLS_PER_METER;
-    const uint16_t y1_cells = y1_meters * COLUMN_CELLS_PER_METER;
-    const uint16_t x2_cells = x2_meters * ROW_CELLS_PER_METER;
-    const uint16_t y2_cells = y2_meters * COLUMN_CELLS_PER_METER;
+bool OccupancyGrid::is_path_free(double x_begin, double y_begin, double x_end, double y_end) {
+    bool has_reached_end_of_path = false;
+    free_path_length(x_begin, y_begin, x_end, y_end, &has_reached_end_of_path);
+    return has_reached_end_of_path;
+}
 
-    const uint16_t n_cells_to_check = max(abs(x2_cells - x1_cells), abs(y2_cells - y1_cells));
-    uint16_t cell_to_check_x;
-    uint16_t cell_to_check_y;
+double OccupancyGrid::free_path_length(double x_begin, double y_begin, double x_end, double y_end, bool* has_reached_end_of_path) {
+    const uint16_t n_cells_to_check = max(abs(x_end - x_begin), abs(y_end - y_begin));
+    static uint16_t x_to_check;
+    static uint16_t y_to_check;
+    *has_reached_end_of_path = true;
 
-    for (uint16_t cell_idx_in_path = 1; cell_idx_in_path <= n_cells_to_check; cell_idx_in_path++) {
+    uint16_t cell_idx_in_path = 1;
+    for (cell_idx_in_path; cell_idx_in_path <= n_cells_to_check; cell_idx_in_path++) {
         const double path_proportion_to_finish = (double)cell_idx_in_path / (double)n_cells_to_check;
 
-        cell_to_check_x = x1_cells + (uint16_t)((x2_cells - x1_cells) * path_proportion_to_finish);
-        cell_to_check_y = y1_cells + (uint16_t)((y2_cells - y1_cells) * path_proportion_to_finish);
+        x_to_check = x_begin + (uint16_t)((x_end - x_begin) * path_proportion_to_finish);
+        y_to_check = y_begin + (uint16_t)((y_end - y_begin) * path_proportion_to_finish);
 
-        const bool is_cell_out_of_map = (cell_to_check_y >= n_columns) || (cell_to_check_x >= n_rows);
+        const bool is_cell_out_of_map = (y_to_check >= n_columns) || (x_to_check >= n_rows);
         if (is_cell_out_of_map) {
-            return false;
+            *has_reached_end_of_path = false;
+            break;
         }
 
-        const bool is_cell_occupied = grid[cell_to_check_x][cell_to_check_y] == 1;
+        const bool is_cell_occupied = grid[x_to_check][y_to_check] == 1;
         if (is_cell_occupied) {
-            return false;
+            *has_reached_end_of_path = false;
+            break;
         }
     }
-    return true;
+    return L2_DISTANCE((x_to_check - (double)x_begin), (y_to_check - (double)y_begin));
+}
+
+double OccupancyGrid::distance_until_obstacle(double x_begin, double y_begin, double angle) {
+    const uint16_t x_max = x_cells + cos(angle) * n_rows;
+    const uint16_t y_max = y_cells + sin(angle) * n_columns;
+    return free_path_length(x_begin, y_begin, x_end, y_end, /*dummy argument*/ (bool[]){true});
 }

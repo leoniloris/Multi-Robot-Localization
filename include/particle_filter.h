@@ -17,6 +17,7 @@ typedef struct _Particle {
     double angle;
     double weight;
     uint16_t id;
+    double measurement;
 } Particle;
 
 class ParticleFilter {
@@ -32,5 +33,6 @@ class ParticleFilter {
     ParticleFilter(uint16_t number_of_particles);
     void move_particles(double std_x, double std_y, double std_angle, double delta_x, double delta_y, double delta_angle);
     void encode_particles_to_publish(multi_robot::particles& particles);
+    void estimate_measurements();
     ~ParticleFilter() { delete occupancy_grid; };
 };

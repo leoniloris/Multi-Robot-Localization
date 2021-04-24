@@ -1,6 +1,7 @@
-float32 x
-float32 y
-float32 angle
-float32 weight
+float64 x
+float64 y
+float64 angle
+float64 weight
 uint16 id
+float64 measurement
 uint8 type

@@ -1,8 +1,8 @@
 #include "particle_filter.h"
 
-// #include <cmath>
 #include <random>
 
+#include "math_utilities.h"
 #include "multi_robot/particle.h"
 #include "multi_robot/particles.h"
 #include "robot.h"
@@ -20,8 +20,8 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
     random_device rd;
     random_number_generator = mt19937(rd());
 
-    uniform_real_distribution<double> distribution_x(0, occupancy_grid->height_meters());
-    uniform_real_distribution<double> distribution_y(0, occupancy_grid->width_meters());
+    uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
+    uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
     uniform_real_distribution<double> distribution_angle(0, 2 * PI);
     for (uint16_t i = 0; i < n_particles; i++) {
         Particle p = Particle{};
@@ -30,6 +30,7 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
         p.y = distribution_y(random_number_generator);
         p.angle = distribution_angle(random_number_generator);
         p.weight = 1;
+        p.measurement = numeric_limits<double>::infinity();
         particles.push_back(p);
         ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle << " id: " << p.id);
     }
@@ -44,17 +45,17 @@ void ParticleFilter::move_particles(double std_x, double std_y, double std_angle
 void ParticleFilter::move_particle(Particle& particle,
                                    double std_x, double std_y, double std_angle,
                                    double delta_x, double delta_y, double delta_angle) {
-    const double displacement = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
+    const double displacement = L2_DISTANCE(delta_x, delta_y);
     const double delta_x_with_angular_movement = (displacement / delta_angle) * (sin(particle.angle + delta_angle) - sin(particle.angle));
     const double delta_y_with_angular_movement = (displacement / delta_angle) * (cos(particle.angle) - cos(particle.angle + delta_angle));
 
-    std::normal_distribution<double> distribution_x{particle.x + delta_x_with_angular_movement, std_x};
-    std::normal_distribution<double> distribution_y{particle.y + delta_y_with_angular_movement, std_y};
-    std::normal_distribution<double> distribution_angle{particle.angle + delta_angle, std_angle};
+    normal_distribution<double> distribution_x{particle.x + delta_x_with_angular_movement, std_x};
+    normal_distribution<double> distribution_y{particle.y + delta_y_with_angular_movement, std_y};
+    normal_distribution<double> distribution_angle{particle.angle + delta_angle, std_angle};
 
     const double new_x = distribution_x(random_number_generator);
     const double new_y = distribution_y(random_number_generator);
-    const double new_angle = std::fmod(distribution_angle(random_number_generator), 2 * PI);  // wrap 360 degrees
+    const double new_angle = fmod(distribution_angle(random_number_generator), 2 * PI);  // wrap 360 degrees
 
     if (!occupancy_grid->is_path_free(particle.x, particle.y, new_x, new_y)) {
         //// TODO: We can try to just put the weights to 0 and update the particle
@@ -81,5 +82,12 @@ void ParticleFilter::encode_particles_to_publish(multi_robot::particles& encoded
         encoded_particle.id = p.id;
         encoded_particle.type = PARTICLE;
         encoded_particles.particles.push_back(encoded_particle);
+    }
+}
+
+void ParticleFilter::estimate_measurements() {
+    // Laser-based measurement.
+    for (auto& p : particles) {
+        p.measurement = occupancy_grid->distance_until_obstacle(p.x, p.y, p.angle);
     }
 }

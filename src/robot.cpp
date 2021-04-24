@@ -7,6 +7,7 @@
 
 #include "multi_robot/particles.h"
 #include "nav_msgs/Odometry.h"
+#include "occupancy_grid.h"
 #include "particle_filter.h"
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
@@ -17,37 +18,21 @@
 static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation);
 
 void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan) {
-    std::vector<float> laser_measurements = scan->ranges;
-    ROS_DEBUG_STREAM("90 degrees:" << laser_measurements[90]);
+    std::vector<float> laser_measurement_meters = scan->ranges[90];
+    ROS_DEBUG_STREAM("90 degrees:" << laser_measurement_meters);
 }
 
-static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation) {
-    tf::Quaternion q(orientation.x, orientation.y, orientation.z, orientation.w);
-    tf::Matrix3x3 m(q);
-    double _roll, _pitch, yaw;
-    m.getRPY(_roll, _pitch, yaw);
-    ROS_DEBUG_STREAM("robot angle:" << yaw * 180 / PI);
+void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
+    geometry_msgs::Pose2D delta_pose_2d_meters = compute_delta_pose(odom_meters->pose.pose.position, odom_meters->pose.pose.orientation);
+    geometry_msgs::Pose2D delta_pose_2d_cells = meters_to_cells(delta_pose_2d_meters);
 
-    return yaw;
-}
-
-void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom) {
-    geometry_msgs::Pose2D delta_pose_2d = compute_delta_pose(odom->pose.pose.position, odom->pose.pose.orientation);
-    ROS_DEBUG_STREAM("position: " << odom->pose.pose.position.x << " " << odom->pose.pose.position.y);
-    ROS_DEBUG_STREAM("delta pose:" << delta_pose_2d.x << " " << delta_pose_2d.y << " " << delta_pose_2d.theta);
-    {
-        // TODO: estimate good odometry std's.
-        const double std_x = 0.001;
-        const double std_y = 0.001;
-        const double std_angle = 0.0002;
-        particle_filter->move_particles(std_x, std_y, std_angle, delta_pose_2d.x, delta_pose_2d.y, delta_pose_2d.theta);
-        //// particle_filter->measure();
-        //// particle_filter->update_weights_from_measurements();
-    }
-    static int a = 0;
-    if ((a++ % 5) == 0) {
-        broadcast_particles();
-    }
+    static const double std_x = 0.1;
+    static const double std_y = 0.1;
+    static const double std_angle = 0.0002;
+    particle_filter->move_particles(std_x, std_y, std_angle, delta_pose_2d_cells.x, delta_pose_2d_cells.y, delta_pose_2d_cells.theta);
+    particle_filter->estimate_measurements();
+    // TODO: compute weights from measurements. particle_filter->update_weights_from_measurements();
+    broadcast_particles();
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
@@ -70,6 +55,16 @@ geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geom
     return delta_pose_2d;
 }
 
+static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation) {
+    tf::Quaternion q(orientation.x, orientation.y, orientation.z, orientation.w);
+    tf::Matrix3x3 m(q);
+    double _roll, _pitch, yaw;
+    m.getRPY(_roll, _pitch, yaw);
+    ROS_DEBUG_STREAM("robot angle:" << yaw * 180 / PI);
+
+    return yaw;
+}
+
 Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     this->robot_index = robot_index;
     std::string robot_suffix = std::to_string(robot_index);
@@ -86,6 +81,9 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 }
 
 void Robot::broadcast_particles() {
+    static int a = 0;
+    if ((a++ % 5) != 0) {return;} // a little downsampling to test.
+
     ROS_INFO_STREAM("broadcasting particles");
     multi_robot::particles particles;
     particles.robot_index = robot_index;
