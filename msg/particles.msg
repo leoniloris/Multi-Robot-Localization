@@ -1,2 +1,2 @@
-multi_robot/particle[] particles
+multi_robot_localization/particle[] particles
 uint8 robot_index

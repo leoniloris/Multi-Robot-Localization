@@ -3,19 +3,18 @@
 #include <random>
 
 #include "math_utilities.h"
-#include "multi_robot/particle.h"
-#include "multi_robot/particles.h"
+#include "multi_robot_localization/particle.h"
+#include "multi_robot_localization/particles.h"
 #include "robot.h"
 #include "ros/ros.h"
 
 using namespace std;
 
-#define MEASUREMENT_STD 0.1
 #define EPS 0.00000001
 
 ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
     const string home_folder = string(getenv("HOME"));
-    const string grid_path = string("/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv");
+    const string grid_path = string("/catkin_ws/src/multi_robot_localization/occupancy_grid/base_occupancy_grid.csv");
 
     occupancy_grid = new OccupancyGrid(home_folder + grid_path);
     n_particles = number_of_particles;
@@ -73,10 +72,10 @@ void ParticleFilter::move_particle(Particle& particle, double delta_x, double de
     particle.angle = new_angle;
 }
 
-void ParticleFilter::encode_particles_to_publish(multi_robot::particles& encoded_particles) {
+void ParticleFilter::encode_particles_to_publish(multi_robot_localization::particles& encoded_particles) {
     encoded_particles.particles.clear();
     for (auto& p : particles) {
-        multi_robot::particle encoded_particle;
+        multi_robot_localization::particle encoded_particle;
         encoded_particle.x = p.x;
         encoded_particle.y = p.y;
         encoded_particle.angle = p.angle;
@@ -90,11 +89,8 @@ void ParticleFilter::encode_particles_to_publish(multi_robot::particles& encoded
 
 void ParticleFilter::estimate_measurements() {
     // Laser-based measurement.
-    normal_distribution<double> distribution{0, MEASUREMENT_STD};
-
     for (auto& p : particles) {
-        const double measurement_noise = distribution(random_number_generator);
-        p.measurement = occupancy_grid->distance_until_obstacle(p.x, p.y, p.angle);// + measurement_noise;
+        p.measurement = occupancy_grid->distance_until_obstacle(p.x, p.y, p.angle);
         printf("p.measurement %f\n", p.measurement);
     }
 }

@@ -5,7 +5,7 @@
 #include <random>
 #include <vector>
 
-#include "multi_robot/particles.h"
+#include "multi_robot_localization/particles.h"
 #include "occupancy_grid.h"
 #include "ros/ros.h"
 
@@ -32,7 +32,7 @@ class ParticleFilter {
    public:
     ParticleFilter(uint16_t number_of_particles);
     void move_particles(double delta_x, double delta_y, double delta_angle);
-    void encode_particles_to_publish(multi_robot::particles& particles);
+    void encode_particles_to_publish(multi_robot_localization::particles& particles);
     void estimate_measurements();
     ~ParticleFilter() { delete occupancy_grid; };
 };

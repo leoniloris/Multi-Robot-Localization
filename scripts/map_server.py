@@ -1,4 +1,4 @@
-from multi_robot.msg import particles as ParticlesMessageType
+from multi_robot_localization.msg import particles as ParticlesMessageType
 from threading import Event, Thread
 from queue import Queue, Empty
 from enum import Enum
@@ -37,7 +37,7 @@ class MapServer:
     def _setup_map_plot(self):
         self._occupancy_grid = np.loadtxt(
             os.environ["HOME"] +
-            "/catkin_ws/src/multi_robot/occupancy_grid/base_occupancy_grid.csv",
+            "/catkin_ws/src/multi_robot_localization/occupancy_grid/base_occupancy_grid.csv",
             delimiter=",",
         )
 

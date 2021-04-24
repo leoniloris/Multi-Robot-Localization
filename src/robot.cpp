@@ -5,7 +5,7 @@
 
 #include <string>
 
-#include "multi_robot/particles.h"
+#include "multi_robot_localization/particles.h"
 #include "nav_msgs/Odometry.h"
 #include "occupancy_grid.h"
 #include "particle_filter.h"
@@ -67,21 +67,22 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     std::string robot_suffix = std::to_string(robot_index);
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
-    particle_filter = new ParticleFilter(1);
+
+    particle_filter = new ParticleFilter(100);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
 
     laser_scan = node_handle.subscribe<sensor_msgs::LaserScan>(laser_topic, PUBSUB_QUEUE_SIZE, &Robot::laser_callback, this);
     odometry = node_handle.subscribe<nav_msgs::Odometry>(odometry_topic, PUBSUB_QUEUE_SIZE, &Robot::odometry_callback, this);
-    broadcaster = node_handle.advertise<multi_robot::particles>("particles_broadcast", PUBSUB_QUEUE_SIZE);
+    broadcaster = node_handle.advertise<multi_robot_localization::particles>("particles_broadcast", PUBSUB_QUEUE_SIZE);
 }
 
 void Robot::broadcast_particles() {
     static int a = 0;
     if ((a++ % 10) != 0) {return;} // a little downsampling to test.
 
-    multi_robot::particles particles;
+    multi_robot_localization::particles particles;
     particles.robot_index = robot_index;
     particle_filter->encode_particles_to_publish(particles);
     broadcaster.publish(particles);
