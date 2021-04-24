@@ -13,9 +13,7 @@ import sys
 import os
 
 
-# the following constants OUGHT to be the same as the one defined on `robot.h` and `occupancy_grid.h`
-COLUMN_CELLS_PER_METER = (895.0 / 23.0) # y
-ROW_CELLS_PER_METER = (733.0 / 13.0) # x
+# the following OUGHT to be the same as the one defined on `robot.h``
 class ParticleType(Enum):
     ROBOT = 0
     PARTICLE = 1
@@ -58,7 +56,7 @@ class MapServer:
             self._update_plot()
 
     def _handle_message(self, message):
-        # print(message.particles)
+        print(message.particles)
         self._remove_old_particles()
         self._create_new_particles(message.particles, message.robot_index)
 
@@ -78,8 +76,8 @@ class MapServer:
 
     def _create_new_particle(self, particle, robot_index):
         # INFO: swapped x and y, since that's the way the map is generated in gazebo.
-        y_cells = particle.x * ROW_CELLS_PER_METER
-        x_cells = particle.y * COLUMN_CELLS_PER_METER
+        y_cells = particle.x
+        x_cells = particle.y
         angle = particle.angle
         particle_type = particle.type
 

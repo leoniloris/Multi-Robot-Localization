@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     uint8_t robot_index = parse_robot_index_from_arguments(argv);
     Robot robot(robot_index, argc, argv);
 
-    ros::Rate loop_hz(5);
+    ros::Rate loop_hz(10);
     while (ros::ok()) {
         ros::spinOnce();
         loop_hz.sleep();

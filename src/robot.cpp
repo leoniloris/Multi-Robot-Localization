@@ -18,7 +18,7 @@
 static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation);
 
 void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan) {
-    std::vector<float> laser_measurement_meters = scan->ranges[90];
+    float laser_measurement_meters = scan->ranges[90];
     ROS_DEBUG_STREAM("90 degrees:" << laser_measurement_meters);
 }
 
@@ -67,7 +67,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     std::string robot_suffix = std::to_string(robot_index);
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
-    particle_filter = new ParticleFilter(100);
+    particle_filter = new ParticleFilter(1);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -79,9 +79,8 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
 void Robot::broadcast_particles() {
     static int a = 0;
-    if ((a++ % 5) != 0) {return;} // a little downsampling to test.
+    if ((a++ % 10) != 0) {return;} // a little downsampling to test.
 
-    ROS_INFO_STREAM("broadcasting particles");
     multi_robot::particles particles;
     particles.robot_index = robot_index;
     particle_filter->encode_particles_to_publish(particles);

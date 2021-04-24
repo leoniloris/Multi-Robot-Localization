@@ -11,6 +11,7 @@
 using namespace std;
 
 #define MEASUREMENT_STD 0.1
+#define EPS 0.00000001
 
 ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
     const string home_folder = string(getenv("HOME"));
@@ -46,8 +47,9 @@ void ParticleFilter::move_particles(double delta_x, double delta_y, double delta
 
 void ParticleFilter::move_particle(Particle& particle, double delta_x, double delta_y, double delta_angle) {
     const double displacement = L2_DISTANCE(delta_x, delta_y);
-    const double delta_x_with_angular_movement = (displacement / delta_angle) * (sin(particle.angle + delta_angle) - sin(particle.angle));
-    const double delta_y_with_angular_movement = (displacement / delta_angle) * (cos(particle.angle) - cos(particle.angle + delta_angle));
+
+    const double delta_x_with_angular_movement = (displacement / (delta_angle+EPS)) * (sin(particle.angle + delta_angle) - sin(particle.angle));
+    const double delta_y_with_angular_movement = (displacement / (delta_angle+EPS)) * (cos(particle.angle) - cos(particle.angle + delta_angle));
 
     normal_distribution<double> distribution_x{particle.x + delta_x_with_angular_movement, X_STD_ODOMETRY};
     normal_distribution<double> distribution_y{particle.y + delta_y_with_angular_movement, Y_STD_ODOMETRY};
@@ -81,6 +83,7 @@ void ParticleFilter::encode_particles_to_publish(multi_robot::particles& encoded
         encoded_particle.weight = p.weight;
         encoded_particle.id = p.id;
         encoded_particle.type = PARTICLE;
+        encoded_particle.measurement = p.measurement;
         encoded_particles.particles.push_back(encoded_particle);
     }
 }
@@ -91,6 +94,7 @@ void ParticleFilter::estimate_measurements() {
 
     for (auto& p : particles) {
         const double measurement_noise = distribution(random_number_generator);
-        p.measurement = occupancy_grid->distance_until_obstacle(p.x, p.y, p.angle) + measurement_noise;
+        p.measurement = occupancy_grid->distance_until_obstacle(p.x, p.y, p.angle);// + measurement_noise;
+        printf("p.measurement %f\n", p.measurement);
     }
 }
