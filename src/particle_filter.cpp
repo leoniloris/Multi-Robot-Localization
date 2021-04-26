@@ -1,5 +1,6 @@
 #include "particle_filter.h"
 
+#include <cassert>
 #include <random>
 
 #include "math_utilities.h"
@@ -12,51 +13,55 @@ using namespace std;
 
 #define EPS 0.00000001
 
-ParticleFilter::ParticleFilter(uint16_t number_of_particles) {
+ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_t>& angles_degrees) {
     const string home_folder = string(getenv("HOME"));
     const string grid_path = string("/catkin_ws/src/multi_robot_localization/occupancy_grid/base_occupancy_grid.csv");
 
     occupancy_grid = new OccupancyGrid(home_folder + grid_path);
     n_particles = number_of_particles;
 
+    for (auto angle_degree : angles_degrees) {
+        measurement_angles_degrees.push_back(angle_degree);
+    }
+
     random_device rd;
     random_number_generator = mt19937(rd());
 
-    uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
-    uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
-    uniform_real_distribution<double> distribution_angle(0, 2 * PI);
-    for (uint16_t i = 0; i < n_particles; i++) {
+    uniform_real_distribution<double> distribution_x(490, 490 + 1);
+    uniform_real_distribution<double> distribution_y(1366 + 29.999, 1366 + 30);
+    uniform_real_distribution<double> distribution_angle(180 * PI / 180, 181 * PI / 180);
+    // uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
+    // uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
+    // uniform_real_distribution<double> distribution_angle(0, 2 * PI);
+    for (uint16_t particle_idx = 0; particle_idx < n_particles; particle_idx++) {
         Particle p = Particle{};
-        p.id = i;
+        p.id = particle_idx;
         p.x = distribution_x(random_number_generator);
         p.y = distribution_y(random_number_generator);
         p.angle = distribution_angle(random_number_generator);
         p.weight = 1;
-        p.measurement = numeric_limits<double>::infinity();
+        for (auto _ : measurement_angles_degrees) {
+            p.measurements.push_back(numeric_limits<double>::infinity());
+        }
         particles.push_back(p);
         ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle << " id: " << p.id);
     }
 }
 
-void ParticleFilter::move_particles(double delta_x, double delta_y, double delta_angle) {
+void ParticleFilter::move_particles(double forward_movement, double delta_angle) {
     for (auto& p : particles) {
-        move_particle(p, delta_x, delta_y, delta_angle);
+        move_particle(p, forward_movement, delta_angle);
     }
 }
 
-void ParticleFilter::move_particle(Particle& particle, double delta_x, double delta_y, double delta_angle) {
-    const double displacement = L2_DISTANCE(delta_x, delta_y);
+void ParticleFilter::move_particle(Particle& particle, double forward_movement, double delta_angle) {
+    normal_distribution<double> distribution_angle{0, ANGLE_STD_ODOMETRY};
+    const double new_angle = particle.angle + delta_angle + fmod(distribution_angle(random_number_generator), 2 * PI);
 
-    const double delta_x_with_angular_movement = (displacement / (delta_angle+EPS)) * (sin(particle.angle + delta_angle) - sin(particle.angle));
-    const double delta_y_with_angular_movement = (displacement / (delta_angle+EPS)) * (cos(particle.angle) - cos(particle.angle + delta_angle));
-
-    normal_distribution<double> distribution_x{particle.x + delta_x_with_angular_movement, X_STD_ODOMETRY};
-    normal_distribution<double> distribution_y{particle.y + delta_y_with_angular_movement, Y_STD_ODOMETRY};
-    normal_distribution<double> distribution_angle{particle.angle + delta_angle, ANGLE_STD_ODOMETRY};
-
-    const double new_x = distribution_x(random_number_generator);
-    const double new_y = distribution_y(random_number_generator);
-    const double new_angle = fmod(distribution_angle(random_number_generator), 2 * PI);  // wrap 360 degrees
+    normal_distribution<double> distribution_position{0, POSITION_STD_ODOMETRY};
+    const double noisy_forward_movement = forward_movement + distribution_position(random_number_generator);
+    const double new_x = particle.x + (-1 * sin(particle.angle)) * noisy_forward_movement;
+    const double new_y = particle.y + cos(particle.angle) * noisy_forward_movement;
 
     if (!occupancy_grid->is_path_free(particle.x, particle.y, new_x, new_y)) {
         //// TODO: We can try to just put the weights to 0 and update the particle
@@ -82,15 +87,50 @@ void ParticleFilter::encode_particles_to_publish(multi_robot_localization::parti
         encoded_particle.weight = p.weight;
         encoded_particle.id = p.id;
         encoded_particle.type = PARTICLE;
-        encoded_particle.measurement = p.measurement;
+        for (auto measurement : p.measurements) {
+            encoded_particle.measurements.push_back(measurement);
+        }
         encoded_particles.particles.push_back(encoded_particle);
     }
 }
 
-void ParticleFilter::estimate_measurements() {
-    // Laser-based measurement.
+void ParticleFilter::estimate_measurements(double robot_sensor_offset) {
     for (auto& p : particles) {
-        p.measurement = occupancy_grid->distance_until_obstacle(p.x, p.y, p.angle);
-        printf("p.measurement %f\n", p.measurement);
+        for (uint16_t measurement_idx = 0; measurement_idx < measurement_angles_degrees.size(); measurement_idx++) {
+            const double measurement_angle = p.angle + ((measurement_angles_degrees[measurement_idx] * PI) / 180.0);
+            p.measurements[measurement_idx] = occupancy_grid->distance_until_obstacle(p.x, p.y, measurement_angle);  // + robot_sensor_offset;
+        }
     }
 }
+
+void ParticleFilter::update_weights_from_robot_measurements(const std::vector<double>& robot_measurements) {
+    if (robot_measurements.size() != particles[0].measurements.size()) {
+        printf("particles should have the same measurement (size) as the robot. %ld != %ld\n",
+               robot_measurements.size(), particles[0].measurements.size());
+        return;
+    }
+
+    for (auto& p : particles) {
+        p.weight = 0;
+        for (uint16_t measurement_idx = 0; measurement_idx < p.measurements.size(); measurement_idx++) {
+            const double robot_measurement = robot_measurements[measurement_idx];
+            const double particle_measurement = p.measurements[measurement_idx];
+            const double likelihood = GAUSSIAN_LIKELIHOOD(robot_measurement, LASER_SCAN_STD, particle_measurement);
+            // Test different forms of aggregation. I'll use mean so the weight won't go to zero when 0 likelyhood is found
+            p.weight += (likelihood / p.measurements.size());
+        }
+    }
+}
+
+// void ParticleFilter::resample_particles() {
+//     double sum_of_weights = 0;
+//     for (int i = 0; i < num_choices; i++) {
+//         sum_of_weight += choice_weight[i];
+//     }
+//     int rnd = random(sum_of_weight);
+//     for (int i = 0; i < num_choices; i++) {
+//         if (rnd < choice_weight[i])
+//             return i;
+//         rnd -= choice_weight[i];
+//     }
+// }

@@ -6,13 +6,10 @@
 #include <string>
 #include <vector>
 
-// y (columns) scale: 23 [meters] per 895 [cells|columns]
-#define COLUMN_CELLS_PER_METER (895.0 / 23.0)
-
-// x (rows) scale: 13 [meters] per 733 [cells|rows]
-#define ROW_CELLS_PER_METER (733.0 / 13.0)
+#define CELLS_PER_METER (973.0 / 25.0)
 
 geometry_msgs::Pose2D meters_to_cells(geometry_msgs::Pose2D pose);
+double meters_to_cells(double distance);
 
 class OccupancyGrid {
     std::vector<std::vector<uint8_t>> grid;

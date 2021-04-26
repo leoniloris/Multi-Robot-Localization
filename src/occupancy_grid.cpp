@@ -18,10 +18,14 @@ using namespace std;
 
 geometry_msgs::Pose2D meters_to_cells(geometry_msgs::Pose2D pose_meters) {
     geometry_msgs::Pose2D pose_cells;
-    pose_cells.x = pose_meters.x * ROW_CELLS_PER_METER;
-    pose_cells.y = pose_meters.y * COLUMN_CELLS_PER_METER;
+    pose_cells.x = pose_meters.x * CELLS_PER_METER;
+    pose_cells.y = pose_meters.y * CELLS_PER_METER;
     pose_cells.theta = pose_meters.theta;
     return pose_cells;
+}
+
+double meters_to_cells(double distance) {
+    return distance*CELLS_PER_METER;
 }
 
 OccupancyGrid::OccupancyGrid(const std::string& path) {
@@ -82,8 +86,10 @@ double OccupancyGrid::free_path_length(double x_begin, double y_begin, double x_
 }
 
 double OccupancyGrid::distance_until_obstacle(double x_begin, double y_begin, double angle) {
-    const double x_max = x_begin + cos(angle) * n_rows;
-    const double y_max = y_begin + sin(angle) * n_columns;
+    // INFO: x and y are swaped, since tortlebot swaps them.
+    const double max_size = (double)max(n_rows, n_columns);
+    const double x_max = x_begin + (-1*sin(angle)) * max_size;
+    const double y_max = y_begin + cos(angle) * max_size;
 
     static bool _dummy_has_reached_end_of_path = true;
     return free_path_length(x_begin, y_begin, x_max, y_max, &_dummy_has_reached_end_of_path);

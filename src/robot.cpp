@@ -14,31 +14,45 @@
 #include "std_msgs/String.h"
 
 #define PUBSUB_QUEUE_SIZE 10
+#define SENSOR_OFFSET_METERS 0.16
 
 static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation);
 
-void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan) {
-    float laser_measurement_meters = scan->ranges[90];
-    ROS_DEBUG_STREAM("90 degrees:" << laser_measurement_meters);
+void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
+    std::vector<double> robot_measurements = select_robot_measurements(scan_meters);
+    particle_filter->estimate_measurements(meters_to_cells(SENSOR_OFFSET_METERS));
+    particle_filter->update_weights_from_robot_measurements(robot_measurements);
+    broadcast_particles();
+}
+
+std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
+    std::vector<double> selected_measurements;
+    if (previous_pose_2d != nullptr) {
+        for (auto measurement_angle_degrees : measurement_angles_degrees) {
+            selected_measurements.push_back(meters_to_cells(scan_meters->ranges[measurement_angle_degrees]));
+        }
+    }
+    return selected_measurements;
 }
 
 void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     geometry_msgs::Pose2D delta_pose_2d_meters = compute_delta_pose(odom_meters->pose.pose.position, odom_meters->pose.pose.orientation);
     geometry_msgs::Pose2D delta_pose_2d_cells = meters_to_cells(delta_pose_2d_meters);
 
-    particle_filter->move_particles(delta_pose_2d_cells.x, delta_pose_2d_cells.y, delta_pose_2d_cells.theta);
-    particle_filter->estimate_measurements();
-    // TODO: compute weights from measurements. particle_filter->update_weights_from_measurements();
-    broadcast_particles();
+    double forward_movement = L2_DISTANCE(delta_pose_2d_cells.x, delta_pose_2d_cells.y);
+
+    bool is_moving_forward = INNER_PRODUCT(sin(current_angle - PI/2), -delta_pose_2d_cells.x, cos(current_angle - PI/2), delta_pose_2d_cells.y) > 0;
+    forward_movement = is_moving_forward ? forward_movement : -forward_movement;
+    particle_filter->move_particles(forward_movement, delta_pose_2d_cells.theta);
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
-    double current_yaw = get_yaw_from_orientation(orientation);
+    current_angle = get_yaw_from_orientation(orientation);
     geometry_msgs::Pose2D current_pose_2d;
     geometry_msgs::Pose2D delta_pose_2d;
     current_pose_2d.x = point.x;
     current_pose_2d.y = point.y;
-    current_pose_2d.theta = current_yaw;
+    current_pose_2d.theta = current_angle;
 
     if (previous_pose_2d == nullptr) {
         previous_pose_2d = new geometry_msgs::Pose2D(current_pose_2d);
@@ -68,7 +82,10 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
 
-    particle_filter = new ParticleFilter(100);
+    measurement_angles_degrees.push_back(315);
+    measurement_angles_degrees.push_back(0);
+    measurement_angles_degrees.push_back(45);
+    particle_filter = new ParticleFilter(1, measurement_angles_degrees);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -80,7 +97,9 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
 void Robot::broadcast_particles() {
     static int a = 0;
-    if ((a++ % 10) != 0) {return;} // a little downsampling to test.
+    if ((a++ % 2) != 0) {
+        return;
+    }  // a little downsampling to test.
 
     multi_robot_localization::particles particles;
     particles.robot_index = robot_index;
