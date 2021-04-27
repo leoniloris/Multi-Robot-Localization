@@ -33,6 +33,7 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_
     // uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
     // uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
     // uniform_real_distribution<double> distribution_angle(0, 2 * PI);
+
     for (uint16_t particle_idx = 0; particle_idx < n_particles; particle_idx++) {
         Particle p = Particle{};
         p.id = particle_idx;
@@ -122,15 +123,19 @@ void ParticleFilter::update_weights_from_robot_measurements(const std::vector<do
     }
 }
 
-// void ParticleFilter::resample_particles() {
-//     double sum_of_weights = 0;
-//     for (int i = 0; i < num_choices; i++) {
-//         sum_of_weight += choice_weight[i];
-//     }
-//     int rnd = random(sum_of_weight);
-//     for (int i = 0; i < num_choices; i++) {
-//         if (rnd < choice_weight[i])
-//             return i;
-//         rnd -= choice_weight[i];
-//     }
-// }
+void ParticleFilter::resample_particles() {
+    vector<Particle> new_particles;
+    vector<double> weights;
+
+    for (auto& p : particles) {
+        weights.push_back(p.weight);
+    }
+
+    discrete_distribution<int> distribution{weights.begin(), weights.end()};
+    static random_device rd;
+    for (uint16_t particle_idx = 0; particle_idx < particles.size(); particle_idx++) {
+        new_particles.push_back(particles[distribution(rd)]);
+    }
+
+    copy(new_particles.begin(), new_particles.end(), back_inserter(particles));
+}

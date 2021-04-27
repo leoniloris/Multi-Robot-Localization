@@ -27,6 +27,7 @@ class MapServer:
         self.shutdown = Event()
         self._setup_map_plot()
         self._particles_marker = {}
+
         rospy.Subscriber(
             particles_topic,
             ParticlesMessageType,
@@ -55,44 +56,46 @@ class MapServer:
             self._update_plot()
 
     def _handle_message(self, message):
-        # print(message.particles)
-        self._remove_old_particles()
+        print(message.particles)
+        self._remove_old_particles_from_robot(message.robot_index)
         self._create_new_particles(message.particles, message.robot_index)
 
     def _update_plot(self):
         plt.draw()
         plt.pause(0.001)
 
-    def _remove_old_particles(self):
-        for _particle_type, particle_marker in self._particles_marker.items():
-            particle_marker.remove()
-        self._particles_marker.clear()
+    def _remove_old_particles_from_robot(self, robot_index_to_remove):
+        entries_to_remove = []
+        for (robot_index, particle_id), particle_marker in self._particles_marker.items():
+            if robot_index == robot_index_to_remove:
+                particle_marker.remove()
+                entries_to_remove.append((robot_index, particle_id))
+
+        for entry_to_remove in entries_to_remove:
+            del self._particles_marker[entry_to_remove]
 
     def _create_new_particles(self, particles_msg, robot_index):
         for p in particles_msg:
             self._create_new_particle(p, robot_index)
 
     def _create_new_particle(self, particle, robot_index):
-        # INFO: swapped x and y, since that's the way the map is generated in gazebo.
-        y_cells = particle.x
-        x_cells = particle.y
-        angle = particle.angle
-        particle_type = particle.type
-
         particle_marker = self._create_particle_marker(
-            x_cells, y_cells, angle, particle_type)
+            particle.x, particle.y, particle.angle, particle.type)
 
-        self._particles_marker[f"{particle.id}-{robot_index}"] = particle_marker
+        self._particles_marker[(robot_index, particle.id)] = particle_marker
         self._axis.add_patch(particle_marker)
 
     def _create_particle_marker(self, x_cells, y_cells, angle, particle_type):
+        # inverted x-y!
+        x_grid = y_cells
+        y_grid = x_cells
+
         if ParticleType(particle_type) == ParticleType.PARTICLE:
-            dx = 15*np.sin(angle)
-            dy = 15*np.cos(angle)
-            print(angle, x_cells, y_cells, dx, dy)
-            return patches.FancyArrow(x_cells, y_cells, dx, dy, width=3, head_length=10, alpha=0.8, color="red")
+            dx = 15*np.cos(angle)
+            dy = (-15)*np.sin(angle)
+            return patches.FancyArrow(x_grid, y_grid, dx, dy, width=3, head_length=10, alpha=0.8, color="red")
         elif ParticleType(particle_type) == ParticleType.ROBOT:
-            return patches.Circle((x_cells, y_cells), 10, alpha=0.8, color="blue")
+            return patches.Circle((x_grid, y_grid), 10, alpha=0.8, color="blue")
         else:
             raise Exception("Invalid particle type")
 
