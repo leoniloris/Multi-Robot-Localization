@@ -22,7 +22,7 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
     std::vector<double> robot_measurements = select_robot_measurements(scan_meters);
     particle_filter->estimate_measurements(meters_to_cells(SENSOR_OFFSET_METERS));
     particle_filter->update_weights_from_robot_measurements(robot_measurements);
-    // particle_filter->resample_particles();
+
     broadcast_particles();
 }
 
@@ -44,13 +44,17 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
 
     bool is_moving_forward = INNER_PRODUCT(sin(current_angle - PI/2), -delta_pose_2d_cells.x, cos(current_angle - PI/2), delta_pose_2d_cells.y) > 0;
     forward_movement = is_moving_forward ? forward_movement : -forward_movement;
-    printf("forward_movement (%d) %f \n", is_moving_forward, forward_movement);
     particle_filter->move_particles(forward_movement, delta_pose_2d_cells.theta);
+
+    static double accumulated_displacement = 0;
+    if ((accumulated_displacement+=abs(forward_movement) > 10)) {
+        particle_filter->resample_particles();
+        accumulated_displacement = 0;
+    }
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
     current_angle = get_yaw_from_orientation(orientation);
-    printf("POSE (%f,%f) %f \n", point.x, point.y, current_angle);
     geometry_msgs::Pose2D current_pose_2d;
     geometry_msgs::Pose2D delta_pose_2d;
     current_pose_2d.x = point.x;
@@ -85,10 +89,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
 
-    measurement_angles_degrees.push_back(315);
-    measurement_angles_degrees.push_back(0);
-    measurement_angles_degrees.push_back(45);
-    particle_filter = new ParticleFilter(1, measurement_angles_degrees);
+    particle_filter = new ParticleFilter(300, measurement_angles_degrees);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -100,8 +101,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
 void Robot::broadcast_particles() {
     static int a = 0;
-    if ((a++ % 2) != 0) {
-        return;
+    if ((a++ % 2) != 0) {return;
     }  // a little downsampling to test.
 
     multi_robot_localization::particles particles;

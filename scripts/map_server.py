@@ -56,7 +56,6 @@ class MapServer:
             self._update_plot()
 
     def _handle_message(self, message):
-        print(message.particles)
         self._remove_old_particles_from_robot(message.robot_index)
         self._create_new_particles(message.particles, message.robot_index)
 
