@@ -12,8 +12,13 @@ import time
 import sys
 import os
 
+MAX_N_ROBOTS = 30
+
+colors = np.random.random(size=(MAX_N_ROBOTS, 3))
 
 # the following OUGHT to be the same as the one defined on `robot.h``
+
+
 class ParticleType(Enum):
     ROBOT = 0
     PARTICLE = 1
@@ -79,22 +84,23 @@ class MapServer:
 
     def _create_new_particle(self, particle, robot_index):
         particle_marker = self._create_particle_marker(
-            particle.x, particle.y, particle.angle, particle.type)
+            particle.x, particle.y, particle.angle, particle.type, robot_index)
 
         self._particles_marker[(robot_index, particle.id)] = particle_marker
         self._axis.add_patch(particle_marker)
 
-    def _create_particle_marker(self, x_cells, y_cells, angle, particle_type):
+    def _create_particle_marker(self, x_cells, y_cells, angle, particle_type, robot_index):
         # inverted x-y!
         x_grid = y_cells
         y_grid = x_cells
 
+        color = colors[robot_index]
         if ParticleType(particle_type) == ParticleType.PARTICLE:
             dx = 15*np.cos(angle)
             dy = (-15)*np.sin(angle)
-            return patches.FancyArrow(x_grid, y_grid, dx, dy, width=3, head_length=10, alpha=0.8, color="red")
+            return patches.FancyArrow(x_grid, y_grid, dx, dy, width=3, head_length=10, alpha=0.5, color=color)
         elif ParticleType(particle_type) == ParticleType.ROBOT:
-            return patches.Circle((x_grid, y_grid), 10, alpha=0.8, color="blue")
+            return patches.Circle((x_grid, y_grid), 10, alpha=1, color=color)
         else:
             raise Exception("Invalid particle type")
 

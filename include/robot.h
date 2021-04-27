@@ -10,7 +10,7 @@
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 
-#define POSITION_STD_ODOMETRY 0.1
+#define POSITION_STD_ODOMETRY 0.3
 #define ANGLE_STD_ODOMETRY 0.0002
 #define LASER_SCAN_STD 40
 
@@ -33,7 +33,7 @@ class Robot {
     ros::Publisher broadcaster;
     geometry_msgs::Pose2D* previous_pose_2d = nullptr; // Not to be used, just for the robot simulation
     double current_angle; // Not to be used, just for the robot simulation
-    std::vector<uint16_t> measurement_angles_degrees{300, 315, 330, 345, 0, 15, 30, 45, 60};
+    std::vector<uint16_t> measurement_angles_degrees{330, 0, 30};
 
    public:
     Robot(uint8_t robot_index, int argc, char** argv);

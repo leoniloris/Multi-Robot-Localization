@@ -22,8 +22,9 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
     std::vector<double> robot_measurements = select_robot_measurements(scan_meters);
     particle_filter->estimate_measurements(meters_to_cells(SENSOR_OFFSET_METERS));
     particle_filter->update_weights_from_robot_measurements(robot_measurements);
-
     broadcast_particles();
+
+    particle_filter->resample_particles();
 }
 
 std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
@@ -42,15 +43,9 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
 
     double forward_movement = L2_DISTANCE(delta_pose_2d_cells.x, delta_pose_2d_cells.y);
 
-    bool is_moving_forward = INNER_PRODUCT(sin(current_angle - PI/2), -delta_pose_2d_cells.x, cos(current_angle - PI/2), delta_pose_2d_cells.y) > 0;
+    bool is_moving_forward = INNER_PRODUCT(sin(current_angle - PI / 2), -delta_pose_2d_cells.x, cos(current_angle - PI / 2), delta_pose_2d_cells.y) > 0;
     forward_movement = is_moving_forward ? forward_movement : -forward_movement;
     particle_filter->move_particles(forward_movement, delta_pose_2d_cells.theta);
-
-    static double accumulated_displacement = 0;
-    if ((accumulated_displacement+=abs(forward_movement) > 10)) {
-        particle_filter->resample_particles();
-        accumulated_displacement = 0;
-    }
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
@@ -89,7 +84,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
 
-    particle_filter = new ParticleFilter(300, measurement_angles_degrees);
+    particle_filter = new ParticleFilter(2000, measurement_angles_degrees);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -101,12 +96,27 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
 void Robot::broadcast_particles() {
     static int a = 0;
-    if ((a++ % 2) != 0) {return;
+    if ((a++ % 30) != 0) {
+        return;
     }  // a little downsampling to test.
 
+    printf("broadcasting particles\n");
     multi_robot_localization::particles particles;
     particles.robot_index = robot_index;
     particle_filter->encode_particles_to_publish(particles);
+
+    multi_robot_localization::particle robot_particle;
+    robot_particle.x = previous_pose_2d->x;
+    robot_particle.y = previous_pose_2d->y;
+    robot_particle.angle = current_angle;
+    robot_particle.type = ROBOT;
+    // robot_particle.id = p.id;
+    // robot_particle.weight = p.weight;
+    // for (auto measurement : robot measurements) {
+    //     robot_particle.measurements.push_back(measurement);
+    // }
+    particles.particles.push_back(robot_particle);
+
     broadcaster.publish(particles);
 }
 
