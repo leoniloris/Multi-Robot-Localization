@@ -100,7 +100,7 @@ class MapServer:
             dy = (-15)*np.sin(angle)
             return patches.FancyArrow(x_grid, y_grid, dx, dy, width=3, head_length=10, alpha=0.5, color=color)
         elif ParticleType(particle_type) == ParticleType.ROBOT:
-            return patches.Circle((x_grid, y_grid), 10, alpha=1, color=color)
+            return patches.Circle((x_grid+1361, y_grid+491), 10, alpha=1, color=color)
         else:
             raise Exception("Invalid particle type")
 

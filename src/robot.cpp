@@ -106,8 +106,8 @@ void Robot::broadcast_particles() {
     particle_filter->encode_particles_to_publish(particles);
 
     multi_robot_localization::particle robot_particle;
-    robot_particle.x = previous_pose_2d->x;
-    robot_particle.y = previous_pose_2d->y;
+    robot_particle.x = meters_to_cells(previous_pose_2d->x);
+    robot_particle.y = meters_to_cells(previous_pose_2d->y);
     robot_particle.angle = current_angle;
     robot_particle.type = ROBOT;
     // robot_particle.id = p.id;
