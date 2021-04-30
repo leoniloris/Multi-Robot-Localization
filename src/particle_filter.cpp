@@ -125,11 +125,7 @@ void ParticleFilter::update_weights_from_robot_measurements(const std::vector<do
 
 void ParticleFilter::resample_particles() {
     static uint16_t aa = 0;
-    if ((aa++ % 10)!=0) {
-        return;
-    }
     printf("resampling\n");
-
 
     vector<Particle> new_particles;
     vector<double> weights;
@@ -143,6 +139,7 @@ void ParticleFilter::resample_particles() {
     for (uint16_t particle_idx = 0; particle_idx < particles.size(); particle_idx++) {
         Particle p = particles[distribution(rd)];
         p.id = particle_idx;
+        p.id = ;
         new_particles.push_back(p);
     }
 
