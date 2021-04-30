@@ -15,7 +15,7 @@ using namespace std;
 
 ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_t>& angles_degrees) {
     const string home_folder = string(getenv("HOME"));
-    const string grid_path = string("/catkin_ws/src/multi_robot_localization/occupancy_grid/base_occupancy_grid.csv");
+    const string grid_path = string("/catkin_ws/src/multi_robot_localization/occupancy_grid/walls.csv");
 
     occupancy_grid = new OccupancyGrid(home_folder + grid_path);
     n_particles = number_of_particles;
