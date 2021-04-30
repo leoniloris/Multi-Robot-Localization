@@ -4,7 +4,7 @@
   <arg name="n_robots"/>
   <!-- start world -->
   <node name="gazebo" pkg="gazebo_ros" type="gazebo"
-   args="$(find multi_robot_localization)/worlds/hospital.world" respawn="false" output="screen" />
+   args="$(find multi_robot_localization)/worlds/rooms.world" respawn="false" output="screen" />
 
   <!-- include our robots -->
   <include file="$(find multi_robot_localization)/launch/robots.launch">
