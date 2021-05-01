@@ -27,12 +27,12 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_
     random_device rd;
     random_number_generator = mt19937(rd());
 
-    // uniform_real_distribution<double> distribution_x(490, 490 + 1);
-    // uniform_real_distribution<double> distribution_y(1366 + 29.999, 1366 + 30);
-    // uniform_real_distribution<double> distribution_angle(180 * PI / 180, 181 * PI / 180);
-    uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
-    uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
-    uniform_real_distribution<double> distribution_angle(0, 2 * PI);
+    uniform_real_distribution<double> distribution_x(100, 100 + 1);
+    uniform_real_distribution<double> distribution_y(100, 100 + 1);
+    uniform_real_distribution<double> distribution_angle(0, 0.001);
+    // uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
+    // uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
+    // uniform_real_distribution<double> distribution_angle(0, 2 * PI);
 
     for (uint16_t particle_idx = 0; particle_idx < n_particles; particle_idx++) {
         Particle p = Particle{};
@@ -128,7 +128,6 @@ void ParticleFilter::update_weights_from_robot_measurements(const std::vector<do
 
 void ParticleFilter::resample_particles() {
     static uint16_t aa = 0;
-    printf("resampling\n");
 
     vector<Particle> new_particles;
     vector<double> weights;

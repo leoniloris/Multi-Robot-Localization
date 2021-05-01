@@ -36,6 +36,7 @@ std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserSca
             const double distance = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
             selected_measurements.push_back(distance < laser_max_range ? distance : laser_max_range);
         }
+        printf("%f,%f,%f,%f angle %f\n", selected_measurements[0], selected_measurements[1], selected_measurements[2], selected_measurements[3], previous_pose_2d->theta);
     }
     return selected_measurements;
 }
@@ -49,9 +50,6 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     bool is_moving_forward = INNER_PRODUCT(sin(current_angle - PI / 2), -delta_pose_2d_cells.x, cos(current_angle - PI / 2), delta_pose_2d_cells.y) > 0;
     forward_movement = is_moving_forward ? forward_movement : -forward_movement;
     particle_filter->move_particles(forward_movement, delta_pose_2d_cells.theta);
-
-
-    printf("%f,%f,%f\n",odom_meters->pose.pose.position.x, odom_meters->pose.pose.position.y, previous_pose_2d->theta);
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
@@ -90,7 +88,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
 
-    particle_filter = new ParticleFilter(2000, measurement_angles_degrees);
+    particle_filter = new ParticleFilter(2, measurement_angles_degrees);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -104,7 +102,7 @@ void Robot::broadcast_particles() {
     static int a = 0;
     if ((a++ % 30) != 0) {
         return;
-    }  // a little downsampling to test.
+    } // a little downsampling to test.
 
     printf("broadcasting particles\n");
     multi_robot_localization::particles particles;
@@ -116,8 +114,8 @@ void Robot::broadcast_particles() {
     robot_particle.y = meters_to_cells(previous_pose_2d->y);
     robot_particle.angle = current_angle;
     robot_particle.type = ROBOT;
-    // // Robot does not need to set particle id, weight or measurements (for now)
-    // robot_particle.id = p.id;
+    // Robot does not need to set particle id, weight or measurements (for now)
+    robot_particle.id = 0xfff0 + robot_index;
     // robot_particle.weight = p.weight;
     // for (auto measurement : robot measurements) {
     //     robot_particle.measurements.push_back(measurement);

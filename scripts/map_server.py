@@ -92,16 +92,17 @@ class MapServer:
 
     def _create_particle_marker(self, x_cells, y_cells, angle, particle_type, robot_index):
         # inverted x-y!
-        x_grid = y_cells
-        y_grid = x_cells
-
+        x_grid = y_cells+Y_CENTER
+        y_grid = x_cells+X_CENTER
+        plot_angle = angle - (np.pi/2)
+        print(x_grid, y_grid, angle)
         color = colors[robot_index]
         if ParticleType(particle_type) == ParticleType.PARTICLE:
-            dx = 15*np.cos(angle)
-            dy = (-15)*np.sin(angle)
+            dx = 15*np.cos(plot_angle)
+            dy = (-15)*np.sin(plot_angle)
             return patches.FancyArrow(x_grid, y_grid, dx, dy, width=3, head_length=10, alpha=0.5, color=color)
         elif ParticleType(particle_type) == ParticleType.ROBOT:
-            return patches.Circle((x_grid+X_CENTER, y_grid+Y_CENTER), 10, alpha=1, color=color)
+            return patches.Circle((x_grid, y_grid), 10, alpha=1, color=color)
         else:
             raise Exception("Invalid particle type")
 
