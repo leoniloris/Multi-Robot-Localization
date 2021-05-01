@@ -13,6 +13,7 @@
 #define POSITION_STD_ODOMETRY 0.3
 #define ANGLE_STD_ODOMETRY 0.0002
 #define LASER_SCAN_STD 40
+#define LASER_MAX_RANGE_METERS 3
 
 enum ParticleType {
     ROBOT,

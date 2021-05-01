@@ -139,7 +139,6 @@ void ParticleFilter::resample_particles() {
     for (uint16_t particle_idx = 0; particle_idx < particles.size(); particle_idx++) {
         Particle p = particles[distribution(rd)];
         p.id = particle_idx;
-        p.id = ;
         new_particles.push_back(p);
     }
 

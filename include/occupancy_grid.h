@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#define CELLS_PER_METER (973.0 / 25.0)
+#define CELLS_PER_METER (1400.0 / 14.0)
 
 geometry_msgs::Pose2D meters_to_cells(geometry_msgs::Pose2D pose);
 double meters_to_cells(double distance);

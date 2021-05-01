@@ -28,10 +28,13 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
 }
 
 std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
+    static const double laser_max_range_meters = meters_to_cells(LASER_MAX_RANGE_METERS);
     std::vector<double> selected_measurements;
+
     if (previous_pose_2d != nullptr) {
         for (auto measurement_angle_degrees : measurement_angles_degrees) {
-            selected_measurements.push_back(meters_to_cells(scan_meters->ranges[measurement_angle_degrees]));
+            const double range = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
+            selected_measurements.push_back(range < laser_max_range_meters ? range : laser_max_range_meters);
         }
     }
     return selected_measurements;
@@ -46,6 +49,9 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     bool is_moving_forward = INNER_PRODUCT(sin(current_angle - PI / 2), -delta_pose_2d_cells.x, cos(current_angle - PI / 2), delta_pose_2d_cells.y) > 0;
     forward_movement = is_moving_forward ? forward_movement : -forward_movement;
     particle_filter->move_particles(forward_movement, delta_pose_2d_cells.theta);
+
+
+    // printf("%f,%f,%f\n",meters_to_cells(*previous_pose_2d).x, meters_to_cells(*previous_pose_2d).y, previous_pose_2d->theta);
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
