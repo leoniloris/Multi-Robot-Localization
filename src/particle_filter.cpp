@@ -27,9 +27,9 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_
     random_device rd;
     random_number_generator = mt19937(rd());
 
-    uniform_real_distribution<double> distribution_x(100, 100 + 1);
-    uniform_real_distribution<double> distribution_y(100, 100 + 1);
-    uniform_real_distribution<double> distribution_angle(0, 0.001);
+    uniform_real_distribution<double> distribution_x(100, 100 + 0.1);
+    uniform_real_distribution<double> distribution_y(100, 100 + 0.1);
+    uniform_real_distribution<double> distribution_angle(PI/2, PI/2 +0.0001);
     // uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
     // uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
     // uniform_real_distribution<double> distribution_angle(0, 2 * PI);
@@ -61,8 +61,8 @@ void ParticleFilter::move_particle(Particle& particle, double forward_movement, 
 
     normal_distribution<double> distribution_position{0, POSITION_STD_ODOMETRY};
     const double noisy_forward_movement = forward_movement + distribution_position(random_number_generator);
-    const double new_x = particle.x + (-1 * sin(particle.angle)) * noisy_forward_movement;
-    const double new_y = particle.y + cos(particle.angle) * noisy_forward_movement;
+    const double new_x = particle.x + cos(particle.angle) * noisy_forward_movement;
+    const double new_y = particle.y + sin(particle.angle) * noisy_forward_movement;
 
     if (!occupancy_grid->is_path_free(particle.x, particle.y, new_x, new_y)) {
         //// TODO: We can try to just put the weights to 0 and update the particle
@@ -123,6 +123,8 @@ void ParticleFilter::update_weights_from_robot_measurements(const std::vector<do
             // Test different forms of aggregation. I'll use mean so the weight won't go to zero when 0 likelyhood is found
             p.weight += (likelihood / p.measurements.size());
         }
+        printf("parti %f, %d\n", p.measurements[0], p.measurements.size());
+        printf("robot %f, %d\n", robot_measurements[0], robot_measurements.size());
     }
 }
 

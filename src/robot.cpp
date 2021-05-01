@@ -28,7 +28,7 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
 }
 
 std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
-    static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
+    static const double laser_max_range = meters_to_cells(1000);//meters_to_cells(LASER_MAX_RANGE_METERS);
     std::vector<double> selected_measurements;
 
     if (previous_pose_2d != nullptr) {
@@ -36,7 +36,6 @@ std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserSca
             const double distance = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
             selected_measurements.push_back(distance < laser_max_range ? distance : laser_max_range);
         }
-        printf("%f,%f,%f,%f angle %f\n", selected_measurements[0], selected_measurements[1], selected_measurements[2], selected_measurements[3], previous_pose_2d->theta);
     }
     return selected_measurements;
 }
@@ -88,7 +87,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
 
-    particle_filter = new ParticleFilter(2, measurement_angles_degrees);
+    particle_filter = new ParticleFilter(1, measurement_angles_degrees);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -100,11 +99,10 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
 void Robot::broadcast_particles() {
     static int a = 0;
-    if ((a++ % 30) != 0) {
+    if ((a++ % 3) != 0) {
         return;
     } // a little downsampling to test.
 
-    printf("broadcasting particles\n");
     multi_robot_localization::particles particles;
     particles.robot_index = robot_index;
     particle_filter->encode_particles_to_publish(particles);
