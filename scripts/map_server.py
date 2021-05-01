@@ -13,12 +13,13 @@ import sys
 import os
 
 MAX_N_ROBOTS = 30
+X_CENTER = 1361
+Y_CENTER = 491
 
 colors = np.random.random(size=(MAX_N_ROBOTS, 3))
 
+
 # the following OUGHT to be the same as the one defined on `robot.h``
-
-
 class ParticleType(Enum):
     ROBOT = 0
     PARTICLE = 1
@@ -100,7 +101,7 @@ class MapServer:
             dy = (-15)*np.sin(angle)
             return patches.FancyArrow(x_grid, y_grid, dx, dy, width=3, head_length=10, alpha=0.5, color=color)
         elif ParticleType(particle_type) == ParticleType.ROBOT:
-            return patches.Circle((x_grid+1361, y_grid+491), 10, alpha=1, color=color)
+            return patches.Circle((x_grid+X_CENTER, y_grid+Y_CENTER), 10, alpha=1, color=color)
         else:
             raise Exception("Invalid particle type")
 

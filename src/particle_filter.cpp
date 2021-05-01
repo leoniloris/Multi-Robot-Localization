@@ -96,10 +96,13 @@ void ParticleFilter::encode_particles_to_publish(multi_robot_localization::parti
 }
 
 void ParticleFilter::estimate_measurements(double robot_sensor_offset) {
+    static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
+
     for (auto& p : particles) {
         for (uint16_t measurement_idx = 0; measurement_idx < measurement_angles_degrees.size(); measurement_idx++) {
             const double measurement_angle = p.angle + ((measurement_angles_degrees[measurement_idx] * PI) / 180.0);
-            p.measurements[measurement_idx] = occupancy_grid->distance_until_obstacle(p.x, p.y, measurement_angle);  // + robot_sensor_offset;
+            const double distance = occupancy_grid->distance_until_obstacle(p.x, p.y, measurement_angle);  // + robot_sensor_offset;
+            p.measurements[measurement_idx] = distance < laser_max_range ? distance : laser_max_range;
         }
     }
 }

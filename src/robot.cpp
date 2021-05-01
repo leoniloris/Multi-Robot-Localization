@@ -28,13 +28,13 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
 }
 
 std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
-    static const double laser_max_range_meters = meters_to_cells(LASER_MAX_RANGE_METERS);
+    static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
     std::vector<double> selected_measurements;
 
     if (previous_pose_2d != nullptr) {
         for (auto measurement_angle_degrees : measurement_angles_degrees) {
-            const double range = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
-            selected_measurements.push_back(range < laser_max_range_meters ? range : laser_max_range_meters);
+            const double distance = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
+            selected_measurements.push_back(distance < laser_max_range ? distance : laser_max_range);
         }
     }
     return selected_measurements;
@@ -116,6 +116,7 @@ void Robot::broadcast_particles() {
     robot_particle.y = meters_to_cells(previous_pose_2d->y);
     robot_particle.angle = current_angle;
     robot_particle.type = ROBOT;
+    // // Robot does not need to set particle id, weight or measurements (for now)
     // robot_particle.id = p.id;
     // robot_particle.weight = p.weight;
     // for (auto measurement : robot measurements) {
