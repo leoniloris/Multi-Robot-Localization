@@ -51,7 +51,7 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     particle_filter->move_particles(forward_movement, delta_pose_2d_cells.theta);
 
 
-    // printf("%f,%f,%f\n",meters_to_cells(*previous_pose_2d).x, meters_to_cells(*previous_pose_2d).y, previous_pose_2d->theta);
+    printf("%f,%f,%f\n",odom_meters->pose.pose.position.x, odom_meters->pose.pose.position.y, previous_pose_2d->theta);
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {

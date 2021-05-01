@@ -14,7 +14,7 @@
 
 using namespace std;
 
-// center: row 491 column 1361
+// center: row 700 column 350
 
 geometry_msgs::Pose2D meters_to_cells(geometry_msgs::Pose2D pose_meters) {
     geometry_msgs::Pose2D pose_cells;

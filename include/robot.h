@@ -34,7 +34,7 @@ class Robot {
     ros::Publisher broadcaster;
     geometry_msgs::Pose2D* previous_pose_2d = nullptr; // Not to be used, just for the robot simulation
     double current_angle; // Not to be used, just for the robot simulation
-    std::vector<uint16_t> measurement_angles_degrees{330, 0, 30};
+    std::vector<uint16_t> measurement_angles_degrees{270, 0, 90, 180};
 
    public:
     Robot(uint8_t robot_index, int argc, char** argv);

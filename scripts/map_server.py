@@ -13,8 +13,8 @@ import sys
 import os
 
 MAX_N_ROBOTS = 30
-X_CENTER = 1361
-Y_CENTER = 491
+X_CENTER = 700
+Y_CENTER = 350
 
 colors = np.random.random(size=(MAX_N_ROBOTS, 3))
 
