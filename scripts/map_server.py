@@ -92,8 +92,8 @@ class MapServer:
 
     def _create_particle_marker(self, x_cells, y_cells, angle, particle_type, robot_index):
         # inverted x-y!
-        x_grid = y_cells+Y_CENTER
-        y_grid = x_cells+X_CENTER
+        x_grid = y_cells
+        y_grid = x_cells
         plot_angle = angle - (np.pi/2)
         print(x_grid, y_grid, angle)
         color = colors[robot_index]

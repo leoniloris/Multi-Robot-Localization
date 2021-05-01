@@ -29,7 +29,7 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_
 
     uniform_real_distribution<double> distribution_x(100, 100 + 0.1);
     uniform_real_distribution<double> distribution_y(100, 100 + 0.1);
-    uniform_real_distribution<double> distribution_angle(PI/2, PI/2 +0.0001);
+    uniform_real_distribution<double> distribution_angle(0/2, 0/2 +0.0001);
     // uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
     // uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
     // uniform_real_distribution<double> distribution_angle(0, 2 * PI);
@@ -102,7 +102,10 @@ void ParticleFilter::estimate_measurements(double robot_sensor_offset) {
         for (uint16_t measurement_idx = 0; measurement_idx < measurement_angles_degrees.size(); measurement_idx++) {
             const double measurement_angle = p.angle + ((measurement_angles_degrees[measurement_idx] * PI) / 180.0);
             const double distance = occupancy_grid->distance_until_obstacle(p.x, p.y, measurement_angle);  // + robot_sensor_offset;
+
             p.measurements[measurement_idx] = distance < laser_max_range ? distance : laser_max_range;
+
+            printf("measurement angley %f, particle angle %f \n", measurement_angle*180/PI, p.angle*180/PI);
         }
     }
 }
@@ -122,9 +125,10 @@ void ParticleFilter::update_weights_from_robot_measurements(const std::vector<do
             const double likelihood = GAUSSIAN_LIKELIHOOD(robot_measurement, LASER_SCAN_STD, particle_measurement);
             // Test different forms of aggregation. I'll use mean so the weight won't go to zero when 0 likelyhood is found
             p.weight += (likelihood / p.measurements.size());
+
+            printf("parti %f\n", p.measurements[0]);
+            printf("robot %f\n", robot_measurements[0]);
         }
-        printf("parti %f, %d\n", p.measurements[0], p.measurements.size());
-        printf("robot %f, %d\n", robot_measurements[0], robot_measurements.size());
     }
 }
 
