@@ -26,7 +26,10 @@ double meters_to_cells(double distance) {
     return distance * CELLS_PER_METER;
 }
 
-OccupancyGrid::OccupancyGrid(const std::string& path) {
+OccupancyGrid::OccupancyGrid() {
+    const string home_folder = string(getenv("HOME"));
+    const string path = home_folder + string("/catkin_ws/src/multi_robot_localization/occupancy_grid/cross.csv");
+
     string line;
     ifstream f(path.c_str());
     if (!f.is_open()) {
@@ -89,6 +92,6 @@ double OccupancyGrid::distance_until_obstacle(double x_begin, double y_begin, do
     const double x_max = x_begin + cos(angle) * max_size;
     const double y_max = y_begin + sin(angle) * max_size;
     static bool _dummy_has_reached_end_of_path = true;
-    printf("from (%f,%f) to (%f,%f),%f\n", x_begin, y_begin, x_max, y_max, fmod(angle * 180 / PI, 360));
+    // printf("from (%f,%f) to (%f,%f),%f\n", x_begin, y_begin, x_max, y_max, fmod(angle * 180 / PI, 360));
     return free_path_length(x_begin, y_begin, x_max, y_max, &_dummy_has_reached_end_of_path);
 }

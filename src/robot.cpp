@@ -89,7 +89,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
 
-    particle_filter = new ParticleFilter(1, measurement_angles_degrees);
+    particle_filter = new ParticleFilter(5000, measurement_angles_degrees);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -101,7 +101,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
 void Robot::broadcast_particles() {
     static int a = 0;
-    if ((a++ % 3) != 0) {
+    if ((a++ % 10) != 0) {
         return;
     } // a little downsampling to test.
 

@@ -41,7 +41,7 @@ class MapServer:
     def _setup_map_plot(self):
         self._occupancy_grid = np.loadtxt(
             os.environ["HOME"] +
-            "/catkin_ws/src/multi_robot_localization/occupancy_grid/walls.csv",
+            "/catkin_ws/src/multi_robot_localization/occupancy_grid/cross.csv",
             delimiter=",",
         )
 
@@ -78,6 +78,8 @@ class MapServer:
             del self._particles_marker[entry_to_remove]
 
     def _create_new_particles(self, particles_msg, robot_index):
+        # import random
+        # particles = random.sample(particles_msg, 1000)
         for p in particles_msg:
             self._create_new_particle(p, robot_index)
 
@@ -93,7 +95,7 @@ class MapServer:
         x_grid = y_cells
         y_grid = x_cells
         plot_angle = angle - (np.pi/2)
-        print(x_grid, y_grid, angle)
+        # print(x_grid, y_grid, angle)
         color = colors[robot_index]
         if ParticleType(particle_type) == ParticleType.PARTICLE:
             dx = 15*np.cos(plot_angle)
