@@ -1,3 +1,11 @@
+### add rooms model to gazebo models path:
+
+```bash
+export GAZEBO_MODEL_PATH="$(rospack find multi_robot_localization)/models:${GAZEBO_MODEL_PATH}"
+```
+
+it is recommended to add this line in the end of you `~/.bashrc` so the `GAZEBO_MODEL_PATH` can be aways set.
+
 ### building:
 
 ```bash
