@@ -1,12 +1,15 @@
 #pragma once
 
 #include <geometry_msgs/Pose2D.h>
+#include <nav_msgs/Odometry.h>
 #include <stdint.h>
 
 #include <string>
 #include <vector>
 
 #define CELLS_PER_METER (1400.0 / 14.0)
+#define X_CENTER 700
+#define Y_CENTER 350
 
 geometry_msgs::Pose2D meters_to_cells(geometry_msgs::Pose2D pose);
 double meters_to_cells(double distance);

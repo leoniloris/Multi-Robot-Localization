@@ -28,7 +28,7 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
 }
 
 std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
-    static const double laser_max_range = meters_to_cells(1000);//meters_to_cells(LASER_MAX_RANGE_METERS);
+    static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
     std::vector<double> selected_measurements;
 
     if (previous_pose_2d != nullptr) {
@@ -41,14 +41,16 @@ std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserSca
 }
 
 void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
-    geometry_msgs::Pose2D delta_pose_2d_meters = compute_delta_pose(odom_meters->pose.pose.position, odom_meters->pose.pose.orientation);
-    geometry_msgs::Pose2D delta_pose_2d_cells = meters_to_cells(delta_pose_2d_meters);
+    static geometry_msgs::Point position;
+    position.x = meters_to_cells(odom_meters->pose.pose.position.x) + X_CENTER;
+    position.y = meters_to_cells(odom_meters->pose.pose.position.y) + Y_CENTER;
+    geometry_msgs::Pose2D delta_pose_2d = compute_delta_pose(position, odom_meters->pose.pose.orientation);
 
-    double forward_movement = L2_DISTANCE(delta_pose_2d_cells.x, delta_pose_2d_cells.y);
+    double forward_movement = L2_DISTANCE(delta_pose_2d.x, delta_pose_2d.y);
 
-    bool is_moving_forward = INNER_PRODUCT(sin(current_angle - PI / 2), -delta_pose_2d_cells.x, cos(current_angle - PI / 2), delta_pose_2d_cells.y) > 0;
+    bool is_moving_forward = INNER_PRODUCT(sin(current_angle - PI / 2), -delta_pose_2d.x, cos(current_angle - PI / 2), delta_pose_2d.y) > 0;
     forward_movement = is_moving_forward ? forward_movement : -forward_movement;
-    particle_filter->move_particles(forward_movement, delta_pose_2d_cells.theta);
+    particle_filter->move_particles(forward_movement, delta_pose_2d.theta);
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
@@ -108,8 +110,8 @@ void Robot::broadcast_particles() {
     particle_filter->encode_particles_to_publish(particles);
 
     multi_robot_localization::particle robot_particle;
-    robot_particle.x = meters_to_cells(previous_pose_2d->x);
-    robot_particle.y = meters_to_cells(previous_pose_2d->y);
+    robot_particle.x = previous_pose_2d->x;
+    robot_particle.y = previous_pose_2d->y;
     robot_particle.angle = current_angle;
     robot_particle.type = ROBOT;
     // Robot does not need to set particle id, weight or measurements (for now)
