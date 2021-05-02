@@ -111,7 +111,7 @@ class MapServer:
             robot_patch = patches.Circle(
                 (x_grid, y_grid), 15, alpha=1, color=color)
             return [robot_patch] +\
-                [patches.Rectangle((x_grid, y_grid), 8, measurement, angle=(measurement_angle - angle*180/np.pi), color='red', alpha=0.3)
+                [patches.Rectangle((x_grid, y_grid), 8, measurement, angle=(-angle*180/np.pi - measurement_angle), color='red', alpha=0.3)
                  for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
         else:
             raise Exception("Invalid particle type")

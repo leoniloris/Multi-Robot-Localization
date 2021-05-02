@@ -35,7 +35,9 @@ void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_met
             const uint16_t measurement_angle_degrees = measurement_angles_degrees[measurement_idx];
             const double distance = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
             robot_measurements[measurement_idx] = distance < laser_max_range ? distance : laser_max_range;
+            printf("%d, %f  |  ", measurement_angle_degrees, distance);
         }
+        printf("\n");
     }
 }
 
