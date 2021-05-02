@@ -76,12 +76,12 @@ class MapServer:
                 # print(f'removing {robot_index}, {particle_id}')
                 entries_to_remove.append((robot_index, particle_id))
 
-        # for entry_to_remove in entries_to_remove:
-        #     del self._particles_marker[entry_to_remove]
+        for entry_to_remove in entries_to_remove:
+            del self._particles_marker[entry_to_remove]
 
     def _create_new_particles(self, particles_msg, robot_index):
         np.random.choice(particles_msg)
-        particles = np.random.choice(particles_msg, 500 if 500 < len(
+        particles = np.random.choice(particles_msg, 100 if 100 < len(
             particles_msg) else len(particles_msg), replace=False)
         for p in np.concatenate((particles, particles_msg[-1:])):
             self._create_new_particle(p, robot_index)

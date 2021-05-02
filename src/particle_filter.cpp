@@ -113,13 +113,13 @@ void ParticleFilter::update_weights_from_robot_measurements(const std::vector<do
     }
 
     for (auto& p : particles) {
-        p.weight = 0;
+        p.weight = 1;
         for (uint16_t measurement_idx = 0; measurement_idx < p.measurements.size(); measurement_idx++) {
             const double robot_measurement = robot_measurements[measurement_idx];
             const double particle_measurement = p.measurements[measurement_idx];
             const double likelihood = GAUSSIAN_LIKELIHOOD(robot_measurement, LASER_SCAN_STD, particle_measurement);
             // Test different forms of aggregation. I'll use mean so the weight won't go to zero when 0 likelyhood is found
-            p.weight += (likelihood / p.measurements.size());
+            p.weight *= (likelihood / p.measurements.size());
 
             // printf("parti %f\n", p.measurements[0]);
             // printf("robot %f\n", robot_measurements[0]);
