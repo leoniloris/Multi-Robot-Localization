@@ -10,9 +10,9 @@
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 
-#define POSITION_STD_ODOMETRY 0.3
-#define ANGLE_STD_ODOMETRY 0.0002
-#define LASER_SCAN_STD 40
+#define POSITION_STD_ODOMETRY 1
+#define ANGLE_STD_ODOMETRY 0.003
+#define LASER_SCAN_STD 30
 #define LASER_MAX_RANGE_METERS 3
 
 enum ParticleType {
@@ -35,7 +35,7 @@ class Robot {
     geometry_msgs::Pose2D* previous_pose_2d = nullptr; // Not to be used, just for the robot simulation
     double current_angle; // Not to be used, just for the robot simulation
     // std::vector<uint16_t> measurement_angles_degrees{0, 90, 180, 270};
-    std::vector<uint16_t> measurement_angles_degrees{0, 90, 270};
+    std::vector<uint16_t> measurement_angles_degrees{0, 90, 270, 180};
 
    public:
     Robot(uint8_t robot_index, int argc, char** argv);

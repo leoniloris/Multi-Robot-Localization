@@ -24,8 +24,8 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_
     random_device rd;
     random_number_generator = mt19937(rd());
 
-    // uniform_real_distribution<double> distribution_x(X_CENTER + 100, X_CENTER + 100 + 0.1);
-    // uniform_real_distribution<double> distribution_y(Y_CENTER + 100, Y_CENTER + 100 + 0.1);
+    // uniform_real_distribution<double> distribution_x(X_CENTER, X_CENTER + 0.1);
+    // uniform_real_distribution<double> distribution_y(Y_CENTER, Y_CENTER + 0.1);
     // uniform_real_distribution<double> distribution_angle(0/2, 0/2 +0.0001);
     uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
     uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());

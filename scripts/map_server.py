@@ -58,6 +58,7 @@ class MapServer:
                 continue
             self._handle_message(message)
             self._update_plot()
+            print(len(self._particles_marker))
 
     def _handle_message(self, message):
         self._remove_old_particles_from_robot(message.robot_index)
@@ -65,22 +66,24 @@ class MapServer:
 
     def _update_plot(self):
         plt.draw()
-        plt.pause(0.001)
+        plt.pause(0.1)
 
     def _remove_old_particles_from_robot(self, robot_index_to_remove):
         entries_to_remove = []
         for (robot_index, particle_id), particle_marker in self._particles_marker.items():
             if robot_index == robot_index_to_remove:
                 particle_marker.remove()
+                # print(f'removing {robot_index}, {particle_id}')
                 entries_to_remove.append((robot_index, particle_id))
 
-        for entry_to_remove in entries_to_remove:
-            del self._particles_marker[entry_to_remove]
+        # for entry_to_remove in entries_to_remove:
+        #     del self._particles_marker[entry_to_remove]
 
     def _create_new_particles(self, particles_msg, robot_index):
-        # import random
-        # particles = random.sample(particles_msg, 1000)
-        for p in particles_msg:
+        np.random.choice(particles_msg)
+        particles = np.random.choice(particles_msg, 500 if 500 < len(
+            particles_msg) else len(particles_msg), replace=False)
+        for p in np.concatenate((particles, particles_msg[-1:])):
             self._create_new_particle(p, robot_index)
 
     def _create_new_particle(self, particle, robot_index):
