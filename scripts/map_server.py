@@ -110,6 +110,7 @@ class MapServer:
         elif ParticleType(particle_type) == ParticleType.ROBOT:
             robot_patch = patches.Circle(
                 (x_grid, y_grid), 15, alpha=1, color=color)
+            assert len(measurements) == len(MEASUREMENT_ANGLES)
             return [robot_patch] +\
                 [patches.Rectangle((x_grid, y_grid), 8, measurement, angle=(-angle*180/np.pi - measurement_angle), color='red', alpha=0.3)
                  for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
