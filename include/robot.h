@@ -23,7 +23,7 @@ enum ParticleType {
 class Robot {
    private:
     void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan);
-    std::vector<double> select_robot_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters);
+    void update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters);
     void odometry_callback(const nav_msgs::Odometry::ConstPtr& scan);
     geometry_msgs::Pose2D compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation);
 
@@ -32,10 +32,11 @@ class Robot {
     ros::Subscriber laser_scan;
     ros::Subscriber odometry;
     ros::Publisher broadcaster;
-    geometry_msgs::Pose2D* previous_pose_2d = nullptr; // Not to be used, just for the robot simulation
-    double current_angle; // Not to be used, just for the robot simulation
+    geometry_msgs::Pose2D* previous_pose_2d = nullptr;  // Not to be used, just for the robot simulation
+    double current_angle;                               // Not to be used, just for the robot simulation
     // std::vector<uint16_t> measurement_angles_degrees{0, 90, 180, 270};
     std::vector<uint16_t> measurement_angles_degrees{0, 90, 270, 180};
+    std::vector<double> robot_measurements{0, 0, 0, 0};
 
    public:
     Robot(uint8_t robot_index, int argc, char** argv);

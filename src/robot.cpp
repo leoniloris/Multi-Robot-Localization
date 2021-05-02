@@ -19,7 +19,7 @@
 static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation);
 
 void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
-    std::vector<double> robot_measurements = select_robot_measurements(scan_meters);
+    update_measurements(scan_meters);
     particle_filter->estimate_measurements(meters_to_cells(SENSOR_OFFSET_METERS));
     particle_filter->update_weights_from_robot_measurements(robot_measurements);
     broadcast_particles();
@@ -27,17 +27,16 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
     particle_filter->resample_particles();
 }
 
-std::vector<double> Robot::select_robot_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
+void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
     static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
-    std::vector<double> selected_measurements;
 
     if (previous_pose_2d != nullptr) {
-        for (auto measurement_angle_degrees : measurement_angles_degrees) {
+        for (uint16_t measurement_idx = 0; measurement_idx < robot_measurements.size(); measurement_idx++) {
+            const uint16_t measurement_angle_degrees = measurement_angles_degrees[measurement_idx];
             const double distance = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
-            selected_measurements.push_back(distance < laser_max_range ? distance : laser_max_range);
+            robot_measurements[measurement_idx] = distance < laser_max_range ? distance : laser_max_range;
         }
     }
-    return selected_measurements;
 }
 
 void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
@@ -97,13 +96,15 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     laser_scan = node_handle.subscribe<sensor_msgs::LaserScan>(laser_topic, PUBSUB_QUEUE_SIZE, &Robot::laser_callback, this);
     odometry = node_handle.subscribe<nav_msgs::Odometry>(odometry_topic, PUBSUB_QUEUE_SIZE, &Robot::odometry_callback, this);
     broadcaster = node_handle.advertise<multi_robot_localization::particles>("particles_broadcast", PUBSUB_QUEUE_SIZE);
+
+    assert(measurement_angles_degrees.size() == robot_measurements.size());
 }
 
 void Robot::broadcast_particles() {
     static int a = 0;
     if ((a++ % 5) != 0) {
         return;
-    } // a little downsampling to test.
+    }  // a little downsampling to test.
 
     multi_robot_localization::particles particles;
     particles.robot_index = robot_index;
