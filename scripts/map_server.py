@@ -12,12 +12,13 @@ import time
 import sys
 import os
 
-MAX_N_ROBOTS = 30
+MAX_N_ROBOTS = 15
 
 colors = np.random.random(size=(MAX_N_ROBOTS, 3))
 
 
 # the following OUGHT to be the same as the one defined on `robot.h``
+MEASUREMENT_ANGLES = [0, 90, 270, 180]
 class ParticleType(Enum):
     ROBOT = 0
     PARTICLE = 1
@@ -30,7 +31,7 @@ class MapServer:
         self._message_queue = Queue()
         self.shutdown = Event()
         self._setup_map_plot()
-        self._particles_marker = {}
+        self._particles_patches = {}
 
         rospy.Subscriber(
             particles_topic,
@@ -58,7 +59,7 @@ class MapServer:
                 continue
             self._handle_message(message)
             self._update_plot()
-            print(len(self._particles_marker))
+            # print(len(self._particles_patches))
 
     def _handle_message(self, message):
         self._remove_old_particles_from_robot(message.robot_index)
@@ -70,14 +71,15 @@ class MapServer:
 
     def _remove_old_particles_from_robot(self, robot_index_to_remove):
         entries_to_remove = []
-        for (robot_index, particle_id), particle_marker in self._particles_marker.items():
+        for (robot_index, particle_id, patch_id), particle_marker in self._particles_patches.items():
             if robot_index == robot_index_to_remove:
                 particle_marker.remove()
-                # print(f'removing {robot_index}, {particle_id}')
-                entries_to_remove.append((robot_index, particle_id))
+                entries_to_remove.append((robot_index, particle_id, patch_id))
 
         for entry_to_remove in entries_to_remove:
-            del self._particles_marker[entry_to_remove]
+            del self._particles_patches[entry_to_remove]
+
+        self._axis.patches = []
 
     def _create_new_particles(self, particles_msg, robot_index):
         np.random.choice(particles_msg)
@@ -87,25 +89,30 @@ class MapServer:
             self._create_new_particle(p, robot_index)
 
     def _create_new_particle(self, particle, robot_index):
-        particle_marker = self._create_particle_marker(
-            particle.x, particle.y, particle.angle, particle.type, robot_index)
+        particle_patches = self._create_particle_patches(
+            particle.x, particle.y, particle.angle, particle.type, particle.measurements, robot_index)
 
-        self._particles_marker[(robot_index, particle.id)] = particle_marker
-        self._axis.add_patch(particle_marker)
+        for patch_id, particle_patch in enumerate(particle_patches):
+            self._particles_patches[(
+                robot_index, particle.id, patch_id)] = particle_patch
+            self._axis.add_patch(particle_patch)
 
-    def _create_particle_marker(self, x_cells, y_cells, angle, particle_type, robot_index):
+    def _create_particle_patches(self, x_cells, y_cells, angle, particle_type, measurements, robot_index):
         # inverted x-y!
         x_grid = y_cells
         y_grid = x_cells
         plot_angle = angle - (np.pi/2)
-        # print(x_grid, y_grid, angle)
         color = colors[robot_index]
         if ParticleType(particle_type) == ParticleType.PARTICLE:
             dx = 15*np.cos(plot_angle)
             dy = (-15)*np.sin(plot_angle)
-            return patches.FancyArrow(x_grid, y_grid, dx, dy, width=3, head_length=10, alpha=0.5, color=color)
+            return [patches.FancyArrow(x_grid, y_grid, dx, dy, width=3, head_length=10, alpha=0.3, color=color)]
         elif ParticleType(particle_type) == ParticleType.ROBOT:
-            return patches.Circle((x_grid, y_grid), 10, alpha=1, color=color)
+            robot_patch = patches.Circle(
+                (x_grid, y_grid), 15, alpha=1, color=color)
+            return [robot_patch] +\
+                [patches.Rectangle((x_grid, y_grid), 8, measurement, angle=(measurement_angle - angle*180/np.pi), color='red', alpha=0.3)
+                 for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
         else:
             raise Exception("Invalid particle type")
 

@@ -88,7 +88,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
 
-    particle_filter = new ParticleFilter(30000, measurement_angles_degrees);
+    particle_filter = new ParticleFilter(30, measurement_angles_degrees);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -110,21 +110,27 @@ void Robot::broadcast_particles() {
     particles.robot_index = robot_index;
     particle_filter->encode_particles_to_publish(particles);
 
+    multi_robot_localization::particle robot_particle = get_robot_particle_to_publish();
+    particles.particles.push_back(robot_particle);
+
+    broadcaster.publish(particles);
+}
+
+multi_robot_localization::particle Robot::get_robot_particle_to_publish() {
     multi_robot_localization::particle robot_particle;
     robot_particle.x = previous_pose_2d->x;
     robot_particle.y = previous_pose_2d->y;
     robot_particle.angle = current_angle;
     robot_particle.type = ROBOT;
-    // Robot does not need to set particle id, weight or measurements (for now)
-    robot_particle.id = 0xfff0 + robot_index;
+    // Robot does not need to set weight for now
     // robot_particle.weight = p.weight;
-    // for (auto measurement : robot measurements) {
-    //     robot_particle.measurements.push_back(measurement);
-    // }
-    particles.particles.push_back(robot_particle);
-
-    broadcaster.publish(particles);
+    robot_particle.id = 0xfff0 + robot_index;
+    for (auto measurement : robot_measurements) {
+        robot_particle.measurements.push_back(measurement);
+    }
+    return robot_particle;
 }
+
 
 Robot::~Robot() {
     delete particle_filter;
