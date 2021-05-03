@@ -36,7 +36,8 @@ class ParticleFilter {
     std::vector<uint16_t> random_indexes; // speeding up random sampling
 
    public:
-    ParticleFilter(uint16_t number_of_particles, std::vector<uint16_t>& measurement_angles_degrees) ;
+    ParticleFilter(uint16_t number_of_particles, std::vector<uint16_t>& measurement_angles_degrees);
+    bool is_path_free(double x_begin, double y_begin, double x_end, double y_end);
     void move_particles(double forward_movement, double delta_angle);
     void encode_particles_to_publish(multi_robot_localization::particles& particles);
     void estimate_measurements();

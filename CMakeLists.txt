@@ -61,6 +61,7 @@ add_message_files(
   FILES
   particle.msg
   particles.msg
+  InfoForDetector.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -84,6 +85,7 @@ add_message_files(
 # )
 generate_messages(
   DEPENDENCIES
+  
 )
 
 

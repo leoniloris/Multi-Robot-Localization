@@ -164,3 +164,7 @@ void ParticleFilter::resample_particles() {
 
     particles = new_particles;
 }
+
+bool ParticleFilter::is_path_free(double x_begin, double y_begin, double x_end, double y_end) {
+    return occupancy_grid->is_path_free(x_begin, y_begin, x_end, y_end);
+}
