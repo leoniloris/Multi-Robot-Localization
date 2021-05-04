@@ -4,16 +4,16 @@
 #include <tf/tf.h>
 
 #include <string>
+#include <unordered_map>
 
-#include "multi_robot_localization/particles.h"
 #include "multi_robot_localization/InfoForDetector.h"
+#include "multi_robot_localization/particles.h"
 #include "nav_msgs/Odometry.h"
 #include "occupancy_grid.h"
 #include "particle_filter.h"
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include "std_msgs/String.h"
-#include <unordered_map>
 
 #define PUBSUB_QUEUE_SIZE 10
 
@@ -31,14 +31,10 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
     particle_filter->resample_particles();
 }
 
-
 //void Robot::update_weights() {
 //Chama funcao
 //}
-
-
 void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
-
     static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
 
     if (previous_pose_2d != nullptr) {
@@ -46,9 +42,7 @@ void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_met
             const uint16_t measurement_angle_degrees = measurement_angles_degrees[measurement_idx];
             const double distance = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
             robot_measurements[measurement_idx] = distance < laser_max_range ? distance : laser_max_range;
-            printf("%d, %f  |  ", measurement_angle_degrees, distance);
         }
-        printf("\n");
     }
 }
 
@@ -59,13 +53,11 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     geometry_msgs::Pose2D delta_pose_2d = compute_delta_pose(position, odom_meters->pose.pose.orientation);
 
     double forward_movement = L2_DISTANCE(delta_pose_2d.x, delta_pose_2d.y);
-
     bool is_moving_forward = INNER_PRODUCT(sin(current_angle - PI / 2), -delta_pose_2d.x, cos(current_angle - PI / 2), delta_pose_2d.y) > 0;
     forward_movement = is_moving_forward ? forward_movement : -forward_movement;
-
     particle_filter->move_particles(forward_movement, delta_pose_2d.theta);
-    multi_robot_localization::InfoForDetector my_info;
 
+    multi_robot_localization::InfoForDetector my_info;
     my_info.id = robot_index;
     my_info.x = previous_pose_2d->x;
     my_info.y = previous_pose_2d->y;
@@ -73,41 +65,30 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     //my_info.cluster.push_back(x, y, peso)
 
     infos_to_detector.publish(my_info);
-
-    // printf("%f,%f,%f\n",meters_to_cells(*previous_pose_2d).x, meters_to_cells(*previous_pose_2d).y, previous_pose_2d->theta);
-
 }
 
-void Robot::detector_clbk(const multi_robot_localization::InfoForDetector::ConstPtr& _robot_info)
-{
-  multi_robot_localization::InfoForDetector robot_info;
-  robot_info.id = _robot_info->id;
-  robot_info.x = _robot_info->x;
-  robot_info.y = _robot_info->y;
-  robot_info.angle = _robot_info->angle;
+void Robot::detector_clbk(const multi_robot_localization::InfoForDetector::ConstPtr& _robot_info) {
+    multi_robot_localization::InfoForDetector robot_info;
+    robot_info.id = _robot_info->id;
+    robot_info.x = _robot_info->x;
+    robot_info.y = _robot_info->y;
+    robot_info.angle = _robot_info->angle;
 
-  if ((robot_info.id != robot_index) && has_detected(robot_info))
-  {
-      robot_detections[robot_info.id] = robot_info;
-      ROS_INFO_STREAM("DETECTOU ROBO:" << robot_info.id);
-  }
-  else if ((robot_info.id != robot_index) && (robot_detections.find(robot_info.id)!=robot_detections.end()))
-  {
-    robot_detections.erase(robot_info.id);
-    ROS_INFO_STREAM("REMOVEU ROBO:" << robot_info.id);
-  }
-
-
+    if ((robot_info.id != robot_index) && has_detected(robot_info)) {
+        robot_detections[robot_info.id] = robot_info;
+        ROS_INFO_STREAM("DETECTOU ROBO:" << robot_info.id);
+    } else if ((robot_info.id != robot_index) && (robot_detections.find(robot_info.id) != robot_detections.end())) {
+        robot_detections.erase(robot_info.id);
+        ROS_INFO_STREAM("REMOVEU ROBO:" << robot_info.id);
+    }
 }
 
-bool Robot::has_detected(multi_robot_localization::InfoForDetector other_robot_info)
-{
+bool Robot::has_detected(multi_robot_localization::InfoForDetector other_robot_info) {
     //const bool is_path_free = particle_filter->is_path_free((double)previous_pose_2d->x, (double)previous_pose_2d->y, (double)other_robot_info.x, (double)other_robot_info.y);
 
     const double robots_distance = L2_DISTANCE((previous_pose_2d->x - other_robot_info.x), (previous_pose_2d->y - other_robot_info.y));
-    return (robots_distance < DETECTION_THRESHOLD);// && is_path_free;
+    return (robots_distance < meters_to_cells(DETECTION_THRESHOLD_METERS));  // && is_path_free;
 }
-
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
     current_angle = get_yaw_from_orientation(orientation);
@@ -147,17 +128,18 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
     particle_filter = new ParticleFilter(N_PARTICLES, measurement_angles_degrees);
 
-
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
 
     laser_scan = node_handle.subscribe<sensor_msgs::LaserScan>(laser_topic, PUBSUB_QUEUE_SIZE, &Robot::laser_callback, this);
     odometry = node_handle.subscribe<nav_msgs::Odometry>(odometry_topic, PUBSUB_QUEUE_SIZE, &Robot::odometry_callback, this);
-    all_robots_info = node_handle.subscribe<multi_robot_localization::InfoForDetector>("detector_t", PUBSUB_QUEUE_SIZE, &Robot::detector_clbk, this);
     broadcaster = node_handle.advertise<multi_robot_localization::particles>("particles_broadcast", PUBSUB_QUEUE_SIZE);
-    infos_to_detector = node_handle.advertise<multi_robot_localization::InfoForDetector>("detector_t", PUBSUB_QUEUE_SIZE);assert(measurement_angles_degrees.size() == robot_measurements.size());
-}
 
+    all_robots_info = node_handle.subscribe<multi_robot_localization::InfoForDetector>("detector_t", PUBSUB_QUEUE_SIZE, &Robot::detector_clbk, this);
+    infos_to_detector = node_handle.advertise<multi_robot_localization::InfoForDetector>("detector_t", PUBSUB_QUEUE_SIZE);
+
+    assert(measurement_angles_degrees.size() == robot_measurements.size());
+}
 
 void Robot::broadcast_particles() {
     static uint16_t downsample_idx = 0;
