@@ -102,9 +102,11 @@ void ParticleFilter::encode_particles_to_publish(multi_robot_localization::parti
         encoded_particle.weight = particles[random_idx].weight;
         encoded_particle.id = particles[random_idx].id;
         encoded_particle.type = PARTICLE;
-        for (auto measurement : particles[random_idx].measurements) {
-            encoded_particle.measurements.push_back(measurement);
-        }
+        encoded_particle.measurements.clear();
+        //// the plot does not need to receive particles's measurements.
+        // for (auto measurement : particles[random_idx].measurements) {
+        //     encoded_particle.measurements.push_back(measurement);
+        // }
         encoded_particles.particles.push_back(encoded_particle);
     }
 }
