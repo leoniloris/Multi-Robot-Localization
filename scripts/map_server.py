@@ -57,6 +57,7 @@ class MapServer:
                 message = self._message_queue.get(timeout=3)
             except Empty:
                 continue
+            print("handling message")
             self._handle_message(message)
             self._update_plot()
             # print(len(self._particles_patches))
@@ -79,13 +80,10 @@ class MapServer:
         for entry_to_remove in entries_to_remove:
             del self._particles_patches[entry_to_remove]
 
-        self._axis.patches = []
+        # self._axis.patches = []
 
     def _create_new_particles(self, particles_msg, robot_index):
-        np.random.choice(particles_msg)
-        particles = np.random.choice(particles_msg, 100 if 100 < len(
-            particles_msg) else len(particles_msg), replace=False)
-        for p in np.concatenate((particles, particles_msg[-1:])):
+        for p in particles_msg:
             self._create_new_particle(p, robot_index)
 
     def _create_new_particle(self, particle, robot_index):

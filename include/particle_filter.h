@@ -29,6 +29,8 @@ class ParticleFilter {
     std::vector<Particle> particles;
     std::vector<uint16_t> measurement_angles_degrees;
 
+    void shuffle_random_indexes();
+    std::vector<uint16_t> random_indexes; // speeding up random sampling
 
    public:
     ParticleFilter(uint16_t number_of_particles, std::vector<uint16_t>& measurement_angles_degrees) ;

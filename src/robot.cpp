@@ -90,7 +90,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
 
-    particle_filter = new ParticleFilter(30, measurement_angles_degrees);
+    particle_filter = new ParticleFilter(30000, measurement_angles_degrees);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -103,11 +103,6 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 }
 
 void Robot::broadcast_particles() {
-    static int a = 0;
-    if ((a++ % 5) != 0) {
-        return;
-    }  // a little downsampling to test.
-
     multi_robot_localization::particles particles;
     particles.robot_index = robot_index;
     particle_filter->encode_particles_to_publish(particles);
@@ -115,6 +110,7 @@ void Robot::broadcast_particles() {
     multi_robot_localization::particle robot_particle = get_robot_particle_to_publish();
     particles.particles.push_back(robot_particle);
 
+    printf("broadcasting %d particles.\n", particles.particles.size());
     broadcaster.publish(particles);
 }
 
@@ -124,7 +120,7 @@ multi_robot_localization::particle Robot::get_robot_particle_to_publish() {
     robot_particle.y = previous_pose_2d->y;
     robot_particle.angle = current_angle;
     robot_particle.type = ROBOT;
-    // Robot does not need to set weight for now
+    //// Robot does not need to set weight for now
     // robot_particle.weight = p.weight;
     robot_particle.id = 0xfff0 + robot_index;
     for (auto measurement : robot_measurements) {
@@ -132,7 +128,6 @@ multi_robot_localization::particle Robot::get_robot_particle_to_publish() {
     }
     return robot_particle;
 }
-
 
 Robot::~Robot() {
     delete particle_filter;
