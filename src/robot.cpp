@@ -14,13 +14,12 @@
 #include "std_msgs/String.h"
 
 #define PUBSUB_QUEUE_SIZE 10
-#define SENSOR_OFFSET_METERS 0.16
 
 static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation);
 
 void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
     update_measurements(scan_meters);
-    particle_filter->estimate_measurements(meters_to_cells(SENSOR_OFFSET_METERS));
+    particle_filter->estimate_measurements();
     particle_filter->update_weights_from_robot_measurements(robot_measurements);
     broadcast_particles();
 
@@ -90,7 +89,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::init(argc, argv, "robot_node" + robot_suffix);
     ros::NodeHandle node_handle;
 
-    particle_filter = new ParticleFilter(30000, measurement_angles_degrees);
+    particle_filter = new ParticleFilter(N_PARTICLES, measurement_angles_degrees);
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -103,6 +102,10 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 }
 
 void Robot::broadcast_particles() {
+    static uint16_t downsample_idx = 0;
+    if ((downsample_idx++ % 4) != 0) {
+        return;
+    }
     multi_robot_localization::particles particles;
     particles.robot_index = robot_index;
     particle_filter->encode_particles_to_publish(particles);
@@ -110,7 +113,7 @@ void Robot::broadcast_particles() {
     multi_robot_localization::particle robot_particle = get_robot_particle_to_publish();
     particles.particles.push_back(robot_particle);
 
-    printf("broadcasting %d particles.\n", particles.particles.size());
+    printf("broadcasting %ld particles.\n", particles.particles.size());
     broadcaster.publish(particles);
 }
 

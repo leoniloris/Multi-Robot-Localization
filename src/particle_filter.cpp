@@ -87,7 +87,7 @@ void ParticleFilter::move_particle(Particle& particle, double forward_movement, 
 
 void ParticleFilter::encode_particles_to_publish(multi_robot_localization::particles& encoded_particles) {
     static uint16_t downsample_counter = 0;
-    const uint16_t particles_to_encode = 100 >= n_particles ? n_particles : 100 ;
+    const uint16_t particles_to_encode = N_PARTICLES_TO_PUBLISH >= n_particles ? n_particles : N_PARTICLES_TO_PUBLISH ;
     if ((downsample_counter++ % 3) == 0) {  // shuffle random indexes from time to time.
         shuffle_random_indexes();
     }
@@ -109,7 +109,7 @@ void ParticleFilter::encode_particles_to_publish(multi_robot_localization::parti
     }
 }
 
-void ParticleFilter::estimate_measurements(double robot_sensor_offset) {
+void ParticleFilter::estimate_measurements() {
     static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
 
     for (auto& p : particles) {

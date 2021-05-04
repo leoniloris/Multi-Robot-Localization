@@ -7,9 +7,9 @@
 #include <string>
 #include <vector>
 
-#define CELLS_PER_METER (100.0 / 1.0)
-#define X_CENTER 1102
-#define Y_CENTER 1102
+#define CELLS_PER_METER (100.0 / 15.0)
+#define X_CENTER (73.5)
+#define Y_CENTER (73.5)
 
 geometry_msgs::Pose2D meters_to_cells(geometry_msgs::Pose2D pose);
 double meters_to_cells(double distance);

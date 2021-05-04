@@ -14,11 +14,11 @@ import os
 
 MAX_N_ROBOTS = 15
 
-colors = np.random.random(size=(MAX_N_ROBOTS, 3))
+colors = ["", "red", "black", "blue"]
 
 
 # the following OUGHT to be the same as the one defined on `robot.h``
-MEASUREMENT_ANGLES = [0, 90, 270, 180]
+MEASUREMENT_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
 class ParticleType(Enum):
     ROBOT = 0
     PARTICLE = 1
@@ -102,15 +102,15 @@ class MapServer:
         plot_angle = angle - (np.pi/2)
         color = colors[robot_index]
         if ParticleType(particle_type) == ParticleType.PARTICLE:
-            dx = 15*np.cos(plot_angle)
-            dy = (-15)*np.sin(plot_angle)
-            return [patches.FancyArrow(x_grid, y_grid, dx, dy, width=3, head_length=10, alpha=0.3, color=color)]
+            dx = 1*np.cos(plot_angle)
+            dy = (-1)*np.sin(plot_angle)
+            return [patches.FancyArrow(x_grid, y_grid, dx, dy, width=(3/15), head_length=(10/15), alpha=0.3, color=color)]
         elif ParticleType(particle_type) == ParticleType.ROBOT:
             robot_patch = patches.Circle(
-                (x_grid, y_grid), 15, alpha=1, color=color)
+                (x_grid, y_grid), 1, alpha=1, color=color)
             assert len(measurements) == len(MEASUREMENT_ANGLES)
             return [robot_patch] +\
-                [patches.Rectangle((x_grid, y_grid), 8, measurement, angle=(-angle*180/np.pi - measurement_angle), color='red', alpha=0.3)
+                [patches.Rectangle((x_grid, y_grid), (8/15), measurement, angle=(-angle*180/np.pi - measurement_angle), color='red', alpha=0.3)
                  for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
         else:
             raise Exception("Invalid particle type")

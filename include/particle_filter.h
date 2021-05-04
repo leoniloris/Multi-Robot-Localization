@@ -11,6 +11,9 @@
 
 #define PI 3.141592653589793238
 
+#define N_PARTICLES 10000
+#define N_PARTICLES_TO_PUBLISH (N_PARTICLES/100)
+
 typedef struct _Particle {
     double x;
     double y;
@@ -36,7 +39,7 @@ class ParticleFilter {
     ParticleFilter(uint16_t number_of_particles, std::vector<uint16_t>& measurement_angles_degrees) ;
     void move_particles(double forward_movement, double delta_angle);
     void encode_particles_to_publish(multi_robot_localization::particles& particles);
-    void estimate_measurements(double robot_sensor_offset);
+    void estimate_measurements();
     void update_weights_from_robot_measurements(const std::vector<double>& robot_measurements);
     void resample_particles();
     ~ParticleFilter() { delete occupancy_grid; };
