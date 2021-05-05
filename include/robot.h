@@ -12,9 +12,9 @@
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 
-#define POSITION_STD_ODOMETRY (10.0 / 15.0)
-#define ANGLE_STD_ODOMETRY (0.5 / 15.0)
-#define LASER_SCAN_STD (10.0 / 15.0)
+#define POSITION_STD_ODOMETRY (10.0 / 10.0)
+#define ANGLE_STD_ODOMETRY (0.5 / 10.0)
+#define LASER_SCAN_STD (10.0 / 10.0)
 #define LASER_MAX_RANGE_METERS 3
 #define DETECTION_THRESHOLD_METERS 1
 
