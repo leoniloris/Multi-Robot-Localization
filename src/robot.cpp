@@ -138,7 +138,7 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
 void Robot::broadcast_particles() {
     static uint16_t downsample_idx = 0;
-    if ((downsample_idx++ % 5) != 0) {
+    if ((downsample_idx++ % 10) != 0) {
         return;
     }
 

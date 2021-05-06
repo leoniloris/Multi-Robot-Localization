@@ -64,7 +64,7 @@ class MapServer:
             # print(len(self._particles_patches))
 
     def _handle_message(self, message):
-        print(f"handling robot {message.robot_index}.")
+        print(f"handling robot {message.robot_index} messages.")
         self._remove_old_particles_from_robot(message.robot_index)
         self._create_new_particles(message.particles, message.robot_index)
 
@@ -74,27 +74,25 @@ class MapServer:
 
     def _remove_old_particles_from_robot(self, robot_index_to_remove):
         entries_to_remove = []
-        print(len(self._particles_patches))
-        for (robot_index, patch_id), particle_marker in self._particles_patches.items():
+        for (robot_index, patch_id, particle_idx), particle_marker in self._particles_patches.items():
             if robot_index == robot_index_to_remove:
                 particle_marker.remove()
-                entries_to_remove.append((robot_index, patch_id))
+                entries_to_remove.append((robot_index, patch_id, particle_idx))
 
         for entry_to_remove in entries_to_remove:
             del self._particles_patches[entry_to_remove]
-
-        # self._axis.patches = []
+        print(len(self._axis.patches))
 
     def _create_new_particles(self, particles_msg, robot_index):
-        for p in particles_msg:
-            self._create_new_particle(p, robot_index)
+        for particle_idx, p in enumerate(particles_msg):
+            self._create_new_particle(p, robot_index, particle_idx)
 
-    def _create_new_particle(self, particle, robot_index):
+    def _create_new_particle(self, particle, robot_index, particle_idx):
         particle_patches = self._create_particle_patches(
             particle.x, particle.y, particle.angle, particle.type, particle.measurements, robot_index)
 
         for patch_id, particle_patch in enumerate(particle_patches):
-            self._particles_patches[(robot_index, patch_id)] = particle_patch
+            self._particles_patches[(robot_index, patch_id, particle_idx)] = particle_patch
             self._axis.add_patch(particle_patch)
 
     def _create_particle_patches(self, x_cells, y_cells, angle, particle_type, measurements, robot_index):
