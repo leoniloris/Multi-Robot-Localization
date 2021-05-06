@@ -19,6 +19,8 @@ colors = ["", "red", "black", "blue"]
 
 # the following OUGHT to be the same as the one defined on `robot.h``
 MEASUREMENT_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
+
+
 class ParticleType(Enum):
     ROBOT = 0
     PARTICLE = 1
@@ -57,25 +59,26 @@ class MapServer:
                 message = self._message_queue.get(timeout=3)
             except Empty:
                 continue
-            print("handling message")
             self._handle_message(message)
             self._update_plot()
             # print(len(self._particles_patches))
 
     def _handle_message(self, message):
+        print(f"handling robot {message.robot_index}.")
         self._remove_old_particles_from_robot(message.robot_index)
         self._create_new_particles(message.particles, message.robot_index)
 
     def _update_plot(self):
         plt.draw()
-        plt.pause(0.1)
+        plt.pause(0.001)
 
     def _remove_old_particles_from_robot(self, robot_index_to_remove):
         entries_to_remove = []
-        for (robot_index, particle_id, patch_id), particle_marker in self._particles_patches.items():
+        print(len(self._particles_patches))
+        for (robot_index, patch_id), particle_marker in self._particles_patches.items():
             if robot_index == robot_index_to_remove:
                 particle_marker.remove()
-                entries_to_remove.append((robot_index, particle_id, patch_id))
+                entries_to_remove.append((robot_index, patch_id))
 
         for entry_to_remove in entries_to_remove:
             del self._particles_patches[entry_to_remove]
@@ -91,8 +94,7 @@ class MapServer:
             particle.x, particle.y, particle.angle, particle.type, particle.measurements, robot_index)
 
         for patch_id, particle_patch in enumerate(particle_patches):
-            self._particles_patches[(
-                robot_index, particle.id, patch_id)] = particle_patch
+            self._particles_patches[(robot_index, patch_id)] = particle_patch
             self._axis.add_patch(particle_patch)
 
     def _create_particle_patches(self, x_cells, y_cells, angle, particle_type, measurements, robot_index):
@@ -106,7 +108,8 @@ class MapServer:
             dy = (-1)*np.sin(plot_angle)
             return [patches.FancyArrow(x_grid, y_grid, dx, dy, width=(3/15), head_length=(10/15), alpha=0.3, color=color)]
         elif ParticleType(particle_type) == ParticleType.ROBOT:
-            robot_patch = patches.Circle((x_grid, y_grid), 1, alpha=1, color=color)
+            robot_patch = patches.Circle(
+                (x_grid, y_grid), 1, alpha=1, color=color)
             assert len(measurements) == len(MEASUREMENT_ANGLES)
             return [robot_patch] +\
                 [patches.Rectangle((x_grid, y_grid), (8/15), measurement, angle=(-angle*180/np.pi - measurement_angle), color=color, alpha=0.3)

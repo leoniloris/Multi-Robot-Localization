@@ -13,18 +13,8 @@ using namespace std;
 
 #define EPS 0.00000001
 
-void ParticleFilter::shuffle_random_indexes() {
-    for (uint16_t particle_idx = n_particles; particle_idx > 0; --particle_idx) {
-        uint16_t swap_index = rand() % particle_idx;
-        uint16_t temp = random_indexes[particle_idx];
-        random_indexes[particle_idx] = random_indexes[swap_index];
-        random_indexes[swap_index] = temp;
-    }
-}
-
-ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_t>& angles_degrees) {
+ParticleFilter::ParticleFilter(std::vector<uint16_t>& angles_degrees) : particles(N_PARTICLES) {
     occupancy_grid = new OccupancyGrid();
-    n_particles = number_of_particles;
 
     for (auto angle_degree : angles_degrees) {
         measurement_angles_degrees.push_back(angle_degree);
@@ -40,7 +30,7 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_
     uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
     uniform_real_distribution<double> distribution_angle(0, 2 * PI);
 
-    for (uint16_t particle_idx = 0; particle_idx < n_particles; particle_idx++) {
+    for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
         Particle p = Particle{};
         p.id = particle_idx;
         p.x = distribution_x(random_number_generator);
@@ -50,9 +40,14 @@ ParticleFilter::ParticleFilter(uint16_t number_of_particles, std::vector<uint16_
         for (auto _ : measurement_angles_degrees) {
             p.measurements.push_back(numeric_limits<double>::infinity());
         }
-        particles.push_back(p);
+        particles[particle_idx] = p;
         ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle << " id: " << p.id);
-        random_indexes.push_back(particle_idx);
+    }
+
+    encoded_particles.particles.clear();
+    for (uint16_t idx = 0; idx < N_PARTICLES_TO_PUBLISH + 1; idx++) {
+        multi_robot_localization::particle encoded_particle;
+        encoded_particles.particles.push_back(encoded_particle);
     }
 }
 
@@ -85,32 +80,6 @@ void ParticleFilter::move_particle(Particle& particle, double forward_movement, 
     particle.angle = new_angle;
 }
 
-void ParticleFilter::encode_particles_to_publish(multi_robot_localization::particles& encoded_particles) {
-    static uint16_t downsample_counter = 0;
-    const uint16_t particles_to_encode = N_PARTICLES_TO_PUBLISH >= n_particles ? n_particles : N_PARTICLES_TO_PUBLISH ;
-    if ((downsample_counter++ % 3) == 0) {  // shuffle random indexes from time to time.
-        shuffle_random_indexes();
-    }
-
-    encoded_particles.particles.clear();
-    for (uint16_t idx = 0; idx < particles_to_encode; idx++) {
-        const uint16_t random_idx = random_indexes[idx];
-        multi_robot_localization::particle encoded_particle;
-        encoded_particle.x = particles[random_idx].x;
-        encoded_particle.y = particles[random_idx].y;
-        encoded_particle.angle = particles[random_idx].angle;
-        encoded_particle.weight = particles[random_idx].weight;
-        encoded_particle.id = particles[random_idx].id;
-        encoded_particle.type = PARTICLE;
-        encoded_particle.measurements.clear();
-        //// the plot does not need to receive particles's measurements.
-        // for (auto measurement : particles[random_idx].measurements) {
-        //     encoded_particle.measurements.push_back(measurement);
-        // }
-        encoded_particles.particles.push_back(encoded_particle);
-    }
-}
-
 void ParticleFilter::estimate_measurements() {
     static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
 
@@ -139,9 +108,6 @@ void ParticleFilter::update_weights_from_robot_measurements(const std::vector<do
             const double likelihood = GAUSSIAN_LIKELIHOOD(robot_measurement, LASER_SCAN_STD, particle_measurement);
             // Test different forms of aggregation. I'll use mean so the weight won't go to zero when 0 likelyhood is found
             p.weight += (likelihood / p.measurements.size());
-
-            // printf("parti %f\n", p.measurements[0]);
-            // printf("robot %f\n", robot_measurements[0]);
         }
     }
 }
@@ -156,7 +122,24 @@ void ParticleFilter::resample_particles() {
 
     discrete_distribution<int> distribution{weights.begin(), weights.end()};
     static random_device rd;
-    for (uint16_t particle_idx = 0; particle_idx < particles.size(); particle_idx++) {
+    static uint16_t particle_idx = 0;
+    static multi_robot_localization::particle encoded_particle;
+
+    for (particle_idx = 0; particle_idx < N_PARTICLES_TO_PUBLISH; particle_idx++) {
+        Particle p = particles[distribution(rd)];
+        p.id = particle_idx;
+        new_particles.push_back(p);
+
+        // during resample, also already encodes particles to publish
+        encoded_particle.x = p.x;
+        encoded_particle.y = p.y;
+        encoded_particle.angle = p.angle;
+        encoded_particle.weight = p.weight;
+        encoded_particle.type = PARTICLE;
+        encoded_particle.measurements.clear();
+        encoded_particles.particles[particle_idx] = encoded_particle;
+    }
+    for (particle_idx = N_PARTICLES-N_PARTICLES_TO_PUBLISH; particle_idx < N_PARTICLES; particle_idx++) {
         Particle p = particles[distribution(rd)];
         p.id = particle_idx;
         new_particles.push_back(p);
