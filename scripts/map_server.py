@@ -42,7 +42,7 @@ class MapServer:
     def _setup_map_plot(self):
         self._occupancy_grid = np.loadtxt(
             os.environ["HOME"] +
-            "/catkin_ws/src/multi_robot_localization/occupancy_grid/cross_small.csv",
+            "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv",
             delimiter=",",
         )
 

@@ -28,7 +28,7 @@ double meters_to_cells(double distance) {
 
 OccupancyGrid::OccupancyGrid() {
     const string home_folder = string(getenv("HOME"));
-    const string path = home_folder + string("/catkin_ws/src/multi_robot_localization/occupancy_grid/cross_small.csv");
+    const string path = home_folder + string("/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv");
 
     string line;
     ifstream f(path.c_str());
