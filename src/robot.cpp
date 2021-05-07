@@ -33,6 +33,7 @@ void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_met
     static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
 
     if (previous_pose_2d != nullptr) {
+        printf("xy (%f,%f) %f\n", previous_pose_2d->x, previous_pose_2d->y, previous_pose_2d->theta*180/PI);
         for (uint16_t measurement_idx = 0; measurement_idx < robot_measurements.size(); measurement_idx++) {
             const uint16_t measurement_angle_degrees = measurement_angles_degrees[measurement_idx];
             const double distance = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
@@ -52,13 +53,13 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     forward_movement = is_moving_forward ? forward_movement : -forward_movement;
     particle_filter->move_particles(forward_movement, delta_pose_2d.theta);
 
+
     multi_robot_localization::InfoForDetector my_info;
     my_info.id = robot_index;
     my_info.x = previous_pose_2d->x;
     my_info.y = previous_pose_2d->y;
     my_info.angle = previous_pose_2d->theta;
     //my_info.cluster.push_back(x, y, peso)
-
     infos_to_detector.publish(my_info);
 }
 
@@ -146,7 +147,7 @@ void Robot::broadcast_particles() {
     multi_robot_localization::particle robot_particle = get_robot_particle_to_publish();
     particle_filter->encoded_particles.particles[N_PARTICLES_TO_PUBLISH] = robot_particle;
 
-    printf("broadcasting %ld particles.\n", particle_filter->encoded_particles.particles.size());
+    // printf("broadcasting %ld particles.\n", particle_filter->encoded_particles.particles.size());
     broadcaster.publish(particle_filter->encoded_particles);
 }
 

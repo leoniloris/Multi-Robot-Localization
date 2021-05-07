@@ -11,14 +11,19 @@ import rospy
 import time
 import sys
 import os
+import re
 
 MAX_N_ROBOTS = 15
 
 colors = ["", "red", "black", "blue"]
 
 
-# the following OUGHT to be the same as the one defined on `robot.h``
-MEASUREMENT_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
+with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/robot.h", mode='r') as robot_h:
+    MEASUREMENT_ANGLES = list(map(lambda angle: int(angle), re.findall(" measurement_angles_degrees\{(.*?)\}", robot_h.read())[0].split(',')))
+with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/occupancy_grid.h", mode='r') as occupancy_grid:
+    text = occupancy_grid.read()
+    X_CENTER = float(re.findall(r'X_CENTER \((.*?)\)', text)[0])
+    Y_CENTER = float(re.findall(r'Y_CENTER \((.*?)\)', text)[0])
 
 
 class ParticleType(Enum):
@@ -61,7 +66,6 @@ class MapServer:
                 continue
             self._handle_message(message)
             self._update_plot()
-            # print(len(self._particles_patches))
 
     def _handle_message(self, message):
         print(f"handling robot {message.robot_index} messages.")
@@ -92,10 +96,12 @@ class MapServer:
             particle.x, particle.y, particle.angle, particle.type, particle.measurements, robot_index)
 
         for patch_id, particle_patch in enumerate(particle_patches):
-            self._particles_patches[(robot_index, patch_id, particle_idx)] = particle_patch
+            self._particles_patches[(
+                robot_index, patch_id, particle_idx)] = particle_patch
             self._axis.add_patch(particle_patch)
 
     def _create_particle_patches(self, x_cells, y_cells, angle, particle_type, measurements, robot_index):
+        print(x_cells, y_cells, angle, self._occupancy_grid.shape, "<<<<")
         # inverted x-y!
         x_grid = y_cells
         y_grid = x_cells
@@ -105,10 +111,13 @@ class MapServer:
             dx = 1*np.cos(plot_angle)
             dy = (-1)*np.sin(plot_angle)
             return [patches.FancyArrow(x_grid, y_grid, dx, dy, width=(3/15), head_length=(10/15), alpha=0.3, color=color)]
+
         elif ParticleType(particle_type) == ParticleType.ROBOT:
             robot_patch = patches.Circle(
                 (x_grid, y_grid), 1, alpha=1, color=color)
-            assert len(measurements) == len(MEASUREMENT_ANGLES)
+            if len(measurements) != len(MEASUREMENT_ANGLES):
+                print(f"measurements have an incorrect size: {measurements}")
+                return []
             return [robot_patch] +\
                 [patches.Rectangle((x_grid, y_grid), (8/15), measurement, angle=(-angle*180/np.pi - measurement_angle), color=color, alpha=0.3)
                  for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]

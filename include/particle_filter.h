@@ -11,8 +11,8 @@
 
 #define PI 3.141592653589793238
 
-#define N_PARTICLES 10000
-#define N_PARTICLES_TO_PUBLISH (N_PARTICLES/60)
+#define N_PARTICLES 1
+#define N_PARTICLES_TO_PUBLISH 1//(N_PARTICLES/60)
 
 typedef struct _Particle {
     double x;
