@@ -14,7 +14,6 @@
 #define N_PARTICLES 10000
 #define N_ROAMING_PARTICLES (N_PARTICLES/8)
 #define N_PARTICLES_TO_PUBLISH (N_PARTICLES/60)
-#define BATCH_SIZE (N_PARTICLES/20)
 
 typedef struct _Particle {
     double x;
@@ -25,14 +24,14 @@ typedef struct _Particle {
     std::vector<double> measurements;
 } Particle;
 
+Particle create_particle(double height, double width, uint16_t measurement_size);
+
 class ParticleFilter {
     void move_particle(Particle& particle, double forward_movement, double delta_angle);
-    Particle create_particle();
 
     std::vector<Particle> particles;
     std::vector<Particle> resampled_particles;
-    std::vector<Particle> particles_batch_to_cluster;
-    std::mt19937 random_number_generator;
+
     OccupancyGrid* occupancy_grid;
     std::vector<uint16_t> measurement_angles_degrees;
 

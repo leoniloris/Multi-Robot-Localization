@@ -157,6 +157,7 @@ include_directories(
 add_executable(robot_node src/robot_node.cpp
                           src/robot.cpp
                           src/particle_filter.cpp
+                          src/minibatch_kmeans.cpp
                           src/occupancy_grid.cpp)
 
 ## Rename C++ executable without prefix

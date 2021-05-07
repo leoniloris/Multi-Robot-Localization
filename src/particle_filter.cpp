@@ -4,6 +4,7 @@
 #include <random>
 
 #include "math_utilities.h"
+#include "minibatch_kmeans.h"
 #include "multi_robot_localization/particle.h"
 #include "multi_robot_localization/particles.h"
 #include "robot.h"
@@ -13,41 +14,43 @@ using namespace std;
 
 #define EPS 0.00000001
 
+static random_device rd;
+static mt19937 random_number_generator;
+
 bool ParticleFilter::is_path_free(double x_begin, double y_begin, double x_end, double y_end) {
     return occupancy_grid->is_path_free(x_begin, y_begin, x_end, y_end);
 }
 
-Particle ParticleFilter::create_particle() {
+Particle create_particle(double height, double width, uint16_t measurement_size) {
     // static uniform_real_distribution<double> distribution_x(45, 45 + 0.1);
     // static uniform_real_distribution<double> distribution_y(80, 80 + 0.1);
     // static uniform_real_distribution<double> distribution_angle(0/2, 0/2 +0.0001);
-    static uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
-    static uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
+    static uniform_real_distribution<double> distribution_x(0, height);
+    static uniform_real_distribution<double> distribution_y(0, width);
     static uniform_real_distribution<double> distribution_angle(0, 2 * PI);
     Particle p = Particle{};
     p.x = distribution_x(random_number_generator);
     p.y = distribution_y(random_number_generator);
     p.angle = distribution_angle(random_number_generator);
     p.weight = 0;
-    for (auto _ : measurement_angles_degrees) {
+    for (uint16_t _i = 0; _i < measurement_size; _i++) {
         p.measurements.push_back(numeric_limits<double>::infinity());
     }
     return p;
 }
 
-ParticleFilter::ParticleFilter(std::vector<uint16_t>& angles_degrees)
-    : particles(N_PARTICLES), resampled_particles(N_PARTICLES), particles_batch_to_cluster(BATCH_SIZE) {
+ParticleFilter::ParticleFilter(vector<uint16_t>& angles_degrees)
+    : particles(N_PARTICLES), resampled_particles(N_PARTICLES) {
     occupancy_grid = new OccupancyGrid();
 
     for (auto angle_degree : angles_degrees) {
         measurement_angles_degrees.push_back(angle_degree);
     }
 
-    random_device rd;
     random_number_generator = mt19937(rd());
 
     for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
-        Particle p = create_particle();
+        Particle p = create_particle(occupancy_grid->height_cells(), occupancy_grid->width_cells(), measurement_angles_degrees.size());
         particles[particle_idx] = p;
         ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle << " id: " << p.id);
     }
@@ -57,6 +60,8 @@ ParticleFilter::ParticleFilter(std::vector<uint16_t>& angles_degrees)
         multi_robot_localization::particle encoded_particle;
         encoded_particles.particles.push_back(encoded_particle);
     }
+
+    kmeans_init_clusteers(occupancy_grid->height_cells(), occupancy_grid->width_cells());
 }
 
 void ParticleFilter::move_particles(double forward_movement, double delta_angle) {
@@ -101,7 +106,7 @@ void ParticleFilter::estimate_measurements() {
     }
 }
 
-void ParticleFilter::update_weights_from_robot_measurements(const std::vector<double>& robot_measurements) {
+void ParticleFilter::update_weights_from_robot_measurements(const vector<double>& robot_measurements) {
     if (robot_measurements.size() != particles[0].measurements.size()) {
         printf("particles should have the same measurement (size) as the robot. %ld != %ld\n",
                robot_measurements.size(), particles[0].measurements.size());
@@ -134,11 +139,14 @@ void ParticleFilter::resample_particles() {
         if (particle_idx > N_ROAMING_PARTICLES) {
             resampled_particles[particle_idx] = p;
         } else {
-            resampled_particles[particle_idx] = create_particle();
+            resampled_particles[particle_idx] = create_particle(
+                occupancy_grid->height_cells(),
+                occupancy_grid->width_cells(),
+                measurement_angles_degrees.size());
         }
 
         if (particle_idx < BATCH_SIZE) {
-            particles_batch_to_cluster[particle_idx] = p;
+            kmeans_fill_batch_with(p, particle_idx);
         }
     }
 
