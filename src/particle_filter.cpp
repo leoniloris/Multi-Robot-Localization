@@ -13,7 +13,25 @@ using namespace std;
 
 #define EPS 0.00000001
 
-ParticleFilter::ParticleFilter(std::vector<uint16_t>& angles_degrees) : particles(N_PARTICLES) {
+Particle ParticleFilter::create_particle() {
+    // static uniform_real_distribution<double> distribution_x(45, 45 + 0.1);
+    // static uniform_real_distribution<double> distribution_y(80, 80 + 0.1);
+    // static uniform_real_distribution<double> distribution_angle(0/2, 0/2 +0.0001);
+    static uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
+    static uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
+    static uniform_real_distribution<double> distribution_angle(0, 2 * PI);
+    Particle p = Particle{};
+    p.x = distribution_x(random_number_generator);
+    p.y = distribution_y(random_number_generator);
+    p.angle = distribution_angle(random_number_generator);
+    p.weight = 0;
+    for (auto _ : measurement_angles_degrees) {
+        p.measurements.push_back(numeric_limits<double>::infinity());
+    }
+    return p;
+}
+
+ParticleFilter::ParticleFilter(std::vector<uint16_t>& angles_degrees) : particles(N_PARTICLES), resampled_particles(N_PARTICLES) {
     occupancy_grid = new OccupancyGrid();
 
     for (auto angle_degree : angles_degrees) {
@@ -23,23 +41,8 @@ ParticleFilter::ParticleFilter(std::vector<uint16_t>& angles_degrees) : particle
     random_device rd;
     random_number_generator = mt19937(rd());
 
-    // uniform_real_distribution<double> distribution_x(45, 45 + 0.1);
-    // uniform_real_distribution<double> distribution_y(80, 80 + 0.1);
-    // uniform_real_distribution<double> distribution_angle(0/2, 0/2 +0.0001);
-    uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
-    uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
-    uniform_real_distribution<double> distribution_angle(0, 2 * PI);
-
     for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
-        Particle p = Particle{};
-        p.id = particle_idx;
-        p.x = distribution_x(random_number_generator);
-        p.y = distribution_y(random_number_generator);
-        p.angle = distribution_angle(random_number_generator);
-        p.weight = 1;
-        for (auto _ : measurement_angles_degrees) {
-            p.measurements.push_back(numeric_limits<double>::infinity());
-        }
+        Particle p = create_particle();
         particles[particle_idx] = p;
         ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle << " id: " << p.id);
     }
@@ -113,7 +116,6 @@ void ParticleFilter::update_weights_from_robot_measurements(const std::vector<do
 }
 
 void ParticleFilter::resample_particles() {
-    vector<Particle> new_particles;
     vector<double> weights;
 
     for (auto p : this->particles) {
@@ -123,14 +125,22 @@ void ParticleFilter::resample_particles() {
     discrete_distribution<int> distribution{weights.begin(), weights.end()};
     static random_device rd;
     static uint16_t particle_idx = 0;
+
+    // Resample particles, keeping some roaming
+    for (particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
+        Particle p;
+        if (particle_idx > N_ROAMING_PARTICLES) {
+            p = particles[distribution(rd)];
+        } else {
+            p = create_particle();
+        }
+        resampled_particles[particle_idx] = p;
+    }
+
+    // Uniform sample particles to be encoded and plotted.
     static multi_robot_localization::particle encoded_particle;
-
     for (particle_idx = 0; particle_idx < N_PARTICLES_TO_PUBLISH; particle_idx++) {
-        Particle p = particles[distribution(rd)];
-        p.id = particle_idx;
-        new_particles.push_back(p);
-
-        // during resample, also already encodes particles to publish
+        Particle p = particles[particle_idx*(N_PARTICLES/N_PARTICLES_TO_PUBLISH)];
         encoded_particle.x = p.x;
         encoded_particle.y = p.y;
         encoded_particle.angle = p.angle;
@@ -139,13 +149,8 @@ void ParticleFilter::resample_particles() {
         encoded_particle.measurements.clear();
         encoded_particles.particles[particle_idx] = encoded_particle;
     }
-    for (particle_idx = N_PARTICLES-N_PARTICLES_TO_PUBLISH; particle_idx < N_PARTICLES; particle_idx++) {
-        Particle p = particles[distribution(rd)];
-        p.id = particle_idx;
-        new_particles.push_back(p);
-    }
 
-    particles = new_particles;
+    particles = resampled_particles;
 }
 
 bool ParticleFilter::is_path_free(double x_begin, double y_begin, double x_end, double y_end) {

@@ -12,6 +12,7 @@
 #define PI 3.141592653589793238
 
 #define N_PARTICLES 10000
+#define N_ROAMING_PARTICLES (N_PARTICLES/10)
 #define N_PARTICLES_TO_PUBLISH (N_PARTICLES/80)
 
 typedef struct _Particle {
@@ -25,10 +26,12 @@ typedef struct _Particle {
 
 class ParticleFilter {
     void move_particle(Particle& particle, double forward_movement, double delta_angle);
+    Particle create_particle();
 
     std::mt19937 random_number_generator;
     OccupancyGrid* occupancy_grid;
     std::vector<Particle> particles;
+    std::vector<Particle> resampled_particles;
     std::vector<uint16_t> measurement_angles_degrees;
 
    public:

@@ -19,6 +19,7 @@
 
 static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation);
 
+#include <chrono>
 void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
     update_measurements(scan_meters);
     particle_filter->estimate_measurements();
@@ -26,6 +27,7 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
     particle_filter->update_weights_from_robot_measurements(robot_measurements);
     //update_weights(); //Acessa o dicionario de robot detections e chama funcoes do particle_filters
     broadcast_particles();
+
     particle_filter->resample_particles();
 }
 
