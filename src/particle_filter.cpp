@@ -13,6 +13,10 @@ using namespace std;
 
 #define EPS 0.00000001
 
+bool ParticleFilter::is_path_free(double x_begin, double y_begin, double x_end, double y_end) {
+    return occupancy_grid->is_path_free(x_begin, y_begin, x_end, y_end);
+}
+
 Particle ParticleFilter::create_particle() {
     // static uniform_real_distribution<double> distribution_x(45, 45 + 0.1);
     // static uniform_real_distribution<double> distribution_y(80, 80 + 0.1);
@@ -31,7 +35,8 @@ Particle ParticleFilter::create_particle() {
     return p;
 }
 
-ParticleFilter::ParticleFilter(std::vector<uint16_t>& angles_degrees) : particles(N_PARTICLES), resampled_particles(N_PARTICLES) {
+ParticleFilter::ParticleFilter(std::vector<uint16_t>& angles_degrees)
+    : particles(N_PARTICLES), resampled_particles(N_PARTICLES), particles_batch_to_cluster(BATCH_SIZE) {
     occupancy_grid = new OccupancyGrid();
 
     for (auto angle_degree : angles_degrees) {
@@ -116,31 +121,31 @@ void ParticleFilter::update_weights_from_robot_measurements(const std::vector<do
 }
 
 void ParticleFilter::resample_particles() {
+    static random_device rd;
     vector<double> weights;
-
     for (auto p : this->particles) {
         weights.push_back(p.weight);
     }
-
     discrete_distribution<int> distribution{weights.begin(), weights.end()};
-    static random_device rd;
-    static uint16_t particle_idx = 0;
 
     // Resample particles, keeping some roaming
-    for (particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
-        Particle p;
+    for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
+        Particle p = particles[distribution(rd)];
         if (particle_idx > N_ROAMING_PARTICLES) {
-            p = particles[distribution(rd)];
+            resampled_particles[particle_idx] = p;
         } else {
-            p = create_particle();
+            resampled_particles[particle_idx] = create_particle();
         }
-        resampled_particles[particle_idx] = p;
+
+        if (particle_idx < BATCH_SIZE) {
+            particles_batch_to_cluster[particle_idx] = p;
+        }
     }
 
     // Uniform sample particles to be encoded and plotted.
     static multi_robot_localization::particle encoded_particle;
-    for (particle_idx = 0; particle_idx < N_PARTICLES_TO_PUBLISH; particle_idx++) {
-        Particle p = particles[particle_idx*(N_PARTICLES/N_PARTICLES_TO_PUBLISH)];
+    for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES_TO_PUBLISH; particle_idx++) {
+        Particle p = resampled_particles[particle_idx * (N_PARTICLES / N_PARTICLES_TO_PUBLISH)];
         encoded_particle.x = p.x;
         encoded_particle.y = p.y;
         encoded_particle.angle = p.angle;
@@ -151,8 +156,4 @@ void ParticleFilter::resample_particles() {
     }
 
     particles = resampled_particles;
-}
-
-bool ParticleFilter::is_path_free(double x_begin, double y_begin, double x_end, double y_end) {
-    return occupancy_grid->is_path_free(x_begin, y_begin, x_end, y_end);
 }

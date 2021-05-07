@@ -35,7 +35,6 @@ void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_met
     static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
 
     if (previous_pose_2d != nullptr) {
-        printf("xy (%f,%f) %f\n", previous_pose_2d->x, previous_pose_2d->y, previous_pose_2d->theta*180/PI);
         for (uint16_t measurement_idx = 0; measurement_idx < robot_measurements.size(); measurement_idx++) {
             const uint16_t measurement_angle_degrees = measurement_angles_degrees[measurement_idx];
             const double distance = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
@@ -149,7 +148,7 @@ void Robot::broadcast_particles() {
     multi_robot_localization::particle robot_particle = get_robot_particle_to_publish();
     particle_filter->encoded_particles.particles[N_PARTICLES_TO_PUBLISH] = robot_particle;
 
-    // printf("broadcasting %ld particles.\n", particle_filter->encoded_particles.particles.size());
+    printf("broadcasting %ld particles.\n", particle_filter->encoded_particles.particles.size());
     broadcaster.publish(particle_filter->encoded_particles);
 }
 
