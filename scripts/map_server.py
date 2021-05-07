@@ -116,7 +116,7 @@ class MapServer:
             robot_patch = patches.Circle(
                 (x_grid, y_grid), 1, alpha=1, color=color)
             if len(measurements) != len(MEASUREMENT_ANGLES):
-                print(f"measurements have an incorrect size: {measurements}")
+                print(f"measurements have an incorrect size: {measurements} != {MEASUREMENT_ANGLES}")
                 return []
             return [robot_patch] +\
                 [patches.Rectangle((x_grid, y_grid), (8/15), measurement, angle=(-angle*180/np.pi - measurement_angle), color=color, alpha=0.3)

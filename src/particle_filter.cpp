@@ -23,12 +23,12 @@ ParticleFilter::ParticleFilter(std::vector<uint16_t>& angles_degrees) : particle
     random_device rd;
     random_number_generator = mt19937(rd());
 
-    uniform_real_distribution<double> distribution_x(45, 45 + 0.1);
-    uniform_real_distribution<double> distribution_y(80, 80 + 0.1);
-    uniform_real_distribution<double> distribution_angle(0/2, 0/2 +0.0001);
-    // uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
-    // uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
-    // uniform_real_distribution<double> distribution_angle(0, 2 * PI);
+    // uniform_real_distribution<double> distribution_x(45, 45 + 0.1);
+    // uniform_real_distribution<double> distribution_y(80, 80 + 0.1);
+    // uniform_real_distribution<double> distribution_angle(0/2, 0/2 +0.0001);
+    uniform_real_distribution<double> distribution_x(0, (double)occupancy_grid->height_cells());
+    uniform_real_distribution<double> distribution_y(0, (double)occupancy_grid->width_cells());
+    uniform_real_distribution<double> distribution_angle(0, 2 * PI);
 
     for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
         Particle p = Particle{};
