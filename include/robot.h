@@ -21,6 +21,7 @@
 enum ParticleType {
     ROBOT,
     PARTICLE,
+    CLUSTER,
 };
 
 class Robot {

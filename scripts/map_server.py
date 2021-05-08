@@ -19,7 +19,8 @@ colors = ["", "red", "black", "blue"]
 
 
 with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/robot.h", mode='r') as robot_h:
-    MEASUREMENT_ANGLES = list(map(lambda angle: int(angle), re.findall(" measurement_angles_degrees\{(.*?)\}", robot_h.read())[0].split(',')))
+    MEASUREMENT_ANGLES = list(map(lambda angle: int(angle), re.findall(
+        " measurement_angles_degrees\{(.*?)\}", robot_h.read())[0].split(',')))
 with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/occupancy_grid.h", mode='r') as occupancy_grid:
     text = occupancy_grid.read()
     X_CENTER = float(re.findall(r'X_CENTER \((.*?)\)', text)[0])
@@ -29,6 +30,7 @@ with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/
 class ParticleType(Enum):
     ROBOT = 0
     PARTICLE = 1
+    CLUSTER = 2
 
 
 class MapServer:
@@ -101,7 +103,6 @@ class MapServer:
             self._axis.add_patch(particle_patch)
 
     def _create_particle_patches(self, x_cells, y_cells, angle, particle_type, measurements, robot_index):
-        print(x_cells, y_cells, angle, self._occupancy_grid.shape, "<<<<")
         # inverted x-y!
         x_grid = y_cells
         y_grid = x_cells
@@ -116,11 +117,15 @@ class MapServer:
             robot_patch = patches.Circle(
                 (x_grid, y_grid), 1, alpha=1, color=color)
             if len(measurements) != len(MEASUREMENT_ANGLES):
-                print(f"measurements have an incorrect size: {measurements} != {MEASUREMENT_ANGLES}")
+                print(
+                    f"measurements have an incorrect size: {measurements} != {MEASUREMENT_ANGLES}")
                 return []
             return [robot_patch] +\
                 [patches.Rectangle((x_grid, y_grid), (8/15), measurement, angle=(-angle*180/np.pi - measurement_angle), color=color, alpha=0.3)
                  for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
+        elif ParticleType(particle_type) == ParticleType.CLUSTER:
+            print(x_grid, y_grid)
+            return [patches.Rectangle((x_grid, y_grid), 1, 1, alpha=0.5, color="black")]
         else:
             raise Exception("Invalid particle type")
 

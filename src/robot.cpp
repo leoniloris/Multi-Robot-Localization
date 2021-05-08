@@ -146,7 +146,7 @@ void Robot::broadcast_particles() {
 
     particle_filter->encoded_particles.robot_index = robot_index;
     multi_robot_localization::particle robot_particle = get_robot_particle_to_publish();
-    particle_filter->encoded_particles.particles[N_PARTICLES_TO_PUBLISH] = robot_particle;
+    particle_filter->encoded_particles.particles[ROBOT_PARTICLE_IDX] = robot_particle;
 
     printf("broadcasting %ld particles.\n", particle_filter->encoded_particles.particles.size());
     broadcaster.publish(particle_filter->encoded_particles);

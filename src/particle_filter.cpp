@@ -32,7 +32,7 @@ Particle create_particle(double height, double width, uint16_t measurement_size)
     p.x = distribution_x(random_number_generator);
     p.y = distribution_y(random_number_generator);
     p.angle = distribution_angle(random_number_generator);
-    p.weight = 0;
+    p.weight = 1;
     for (uint16_t _i = 0; _i < measurement_size; _i++) {
         p.measurements.push_back(numeric_limits<double>::infinity());
     }
@@ -56,7 +56,8 @@ ParticleFilter::ParticleFilter(vector<uint16_t>& angles_degrees)
     }
 
     encoded_particles.particles.clear();
-    for (uint16_t idx = 0; idx < N_PARTICLES_TO_PUBLISH + 1; idx++) {
+
+    for (uint16_t idx = 0; idx < N_PARTICLES_TO_PUBLISH; idx++) {
         multi_robot_localization::particle encoded_particle;
         encoded_particles.particles.push_back(encoded_particle);
     }
@@ -145,22 +146,33 @@ void ParticleFilter::resample_particles() {
                 measurement_angles_degrees.size());
         }
 
-        if (particle_idx < BATCH_SIZE) {
+        if (particle_idx < KMEANS_BATCH_SIZE) {
             kmeans_fill_batch_with(p, particle_idx);
         }
     }
 
     // Uniform sample particles to be encoded and plotted.
     static multi_robot_localization::particle encoded_particle;
-    for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES_TO_PUBLISH; particle_idx++) {
-        Particle p = resampled_particles[particle_idx * (N_PARTICLES / N_PARTICLES_TO_PUBLISH)];
+    for (uint16_t particle_idx = 0; particle_idx < (ROBOT_PARTICLE_IDX); particle_idx++) {
+        Particle p = resampled_particles[particle_idx * (N_PARTICLES / (ROBOT_PARTICLE_IDX))];
         encoded_particle.x = p.x;
         encoded_particle.y = p.y;
         encoded_particle.angle = p.angle;
         encoded_particle.weight = p.weight;
         encoded_particle.type = PARTICLE;
-        encoded_particle.measurements.clear();
         encoded_particles.particles[particle_idx] = encoded_particle;
+    }
+
+    kmeans_assign_nearest_cluster_to_particles();
+    kmeans_update_cluster_center();
+
+    const vector<Particle> clusters = kmeans_get_clusters();
+    for (uint16_t cluster_idx = 0; cluster_idx < N_CLUSTERS; cluster_idx++) {
+        encoded_particle.x = clusters[cluster_idx].x;
+        encoded_particle.y = clusters[cluster_idx].y;
+        encoded_particle.weight = clusters[cluster_idx].weight;
+        encoded_particle.type = CLUSTER;
+        encoded_particles.particles[cluster_idx + CLUSTER_PARTICLE_FIRST_IDX] = encoded_particle;
     }
 
     particles = resampled_particles;
