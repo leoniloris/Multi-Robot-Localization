@@ -130,10 +130,10 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
     laser_scan = node_handle.subscribe<sensor_msgs::LaserScan>(laser_topic, PUBSUB_QUEUE_SIZE, &Robot::laser_callback, this);
     odometry = node_handle.subscribe<nav_msgs::Odometry>(odometry_topic, PUBSUB_QUEUE_SIZE, &Robot::odometry_callback, this);
-    broadcaster = node_handle.advertise<multi_robot_localization::particles>("particles_broadcast", PUBSUB_QUEUE_SIZE);
+    broadcaster = node_handle.advertise<multi_robot_localization::particles>("plot_info_broadcast", PUBSUB_QUEUE_SIZE);
 
-    all_robots_info = node_handle.subscribe<multi_robot_localization::InfoForDetector>("detector_t", PUBSUB_QUEUE_SIZE, &Robot::detector_clbk, this);
-    infos_to_detector = node_handle.advertise<multi_robot_localization::InfoForDetector>("detector_t", PUBSUB_QUEUE_SIZE);
+    all_robots_info = node_handle.subscribe<multi_robot_localization::InfoForDetector>("robot_inf_broadcast", PUBSUB_QUEUE_SIZE, &Robot::detector_clbk, this);
+    infos_to_detector = node_handle.advertise<multi_robot_localization::InfoForDetector>("robot_inf_broadcast", PUBSUB_QUEUE_SIZE);
 
     assert(measurement_angles_degrees.size() == robot_measurements.size());
 }

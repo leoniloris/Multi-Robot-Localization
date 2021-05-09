@@ -132,7 +132,7 @@ class MapServer:
 
 
 if __name__ == "__main__":
-    mapserver = MapServer("particles_broadcast")
+    mapserver = MapServer("plot_info_broadcast")
 
     def signal_handler(signal, frame):
         print("exitting...")
