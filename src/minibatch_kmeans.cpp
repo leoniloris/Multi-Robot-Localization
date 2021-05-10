@@ -10,20 +10,12 @@ using namespace std;
 // randomly select 3 data points to be our cluster
 // measure distance from each point to a given cluster, and assign a point to the nearest cluster
 // compute the mean of each cluster based on the points it belongs to
-// check if the sum of the variance of all clusters have
 
-#define GET_CLUSTER_ID(cluster_particle) get<0>(cluster_particle)
-#define GET_PARTICLE(cluster_particle) get<1>(cluster_particle)
-
-typedef uint16_t ClusterIdx;
-typedef tuple<ClusterIdx, Particle> ClusterParticle;
-
-static vector<ClusterParticle> cluster_particles(KMEANS_BATCH_SIZE);
+static vector<Particle> cluster_particles(KMEANS_BATCH_SIZE);
 static vector<Particle> clusters(N_CLUSTERS);
 
 void kmeans_fill_batch_with(Particle p, uint16_t at) {
-    tuple<ClusterIdx, Particle> particle_to_cluster(0xffff, p);
-    cluster_particles[at] = particle_to_cluster;
+    cluster_particles[at] = p;
 }
 
 void kmeans_init_clusteers(double height, double width) {
@@ -32,14 +24,13 @@ void kmeans_init_clusteers(double height, double width) {
     }
 }
 
-static inline void assign_nearest_cluster_to_cluster_particle(ClusterParticle& cluster_particle) {
+static void assign_nearest_cluster_to_cluster_particle(Particle& cluster_particle) {
     double distance_to_nearest_cluster = numeric_limits<double>::infinity();
-    for (ClusterIdx cluster_idx = 0; cluster_idx < N_CLUSTERS; cluster_idx++) {
-        const Particle particle = GET_PARTICLE(cluster_particle);
-        double distance_to_cluster = L2_DISTANCE((particle.x - clusters[cluster_idx].x), (particle.y - clusters[cluster_idx].y));
+    for (ClusterId cluster_id = 0; cluster_id < N_CLUSTERS; cluster_id++) {
+        double distance_to_cluster = L2_DISTANCE((cluster_particle.x - clusters[cluster_id].x), (cluster_particle.y - clusters[cluster_id].y));
         if (distance_to_cluster < distance_to_nearest_cluster) {
             distance_to_nearest_cluster = distance_to_cluster;
-            GET_CLUSTER_ID(cluster_particle) = cluster_idx;
+            cluster_particle.cluster_id = cluster_id;
         }
     }
 }
@@ -59,18 +50,25 @@ void kmeans_update_cluster_center() {
         cluster.weight = 0;
     }
 
+    // Compute cluster position by weighted-averaging the particle positions
     for (auto cluster_particle : cluster_particles) {
-        const ClusterIdx cluster_idx = GET_CLUSTER_ID(cluster_particle);
-        const Particle particle = GET_PARTICLE(cluster_particle);
-        new_clusters[cluster_idx].x += (particle.x * particle.weight);
-        new_clusters[cluster_idx].y += (particle.y * particle.weight);
-        new_clusters[cluster_idx].weight += particle.weight;
+        const ClusterId cluster_id = cluster_particle.cluster_id;
+        new_clusters[cluster_id].x += (cluster_particle.x * cluster_particle.weight);
+        new_clusters[cluster_id].y += (cluster_particle.y * cluster_particle.weight);
+        new_clusters[cluster_id].weight += cluster_particle.weight;
     }
-
+    double sum_of_cluster_weights = 0;
     for (auto& cluster : new_clusters) {
+        sum_of_cluster_weights += cluster.weight;
         cluster.x /= cluster.weight;
         cluster.y /= cluster.weight;
     }
+
+    // Normalize cluster weights
+    for (auto& cluster : new_clusters) {
+        cluster.weight /= sum_of_cluster_weights;
+    }
+
     clusters = new_clusters;
 }
 

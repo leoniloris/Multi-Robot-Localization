@@ -7,8 +7,8 @@
 #include <unordered_map>
 
 #include "minibatch_kmeans.h"
-#include "multi_robot_localization/particles.h"
 #include "multi_robot_localization/clusters.h"
+#include "multi_robot_localization/particles.h"
 #include "nav_msgs/Odometry.h"
 #include "occupancy_grid.h"
 #include "particle_filter.h"
@@ -20,16 +20,25 @@
 
 static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation);
 
-#include <chrono>
 void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
     update_measurements(scan_meters);
+
+    // the following order ought to be respected, since a few operations rely on the result of others
     particle_filter->estimate_measurements();
-
     particle_filter->update_weights_from_robot_measurements(robot_measurements);
-    //update_weights(); //Acessa o dicionario de robot detections e chama funcoes do particle_filters
+    update_particle_filter_based_on_detections();
     broadcast_particles();
-
     particle_filter->resample_particles();
+}
+
+void Robot::update_particle_filter_based_on_detections() {
+    const vector<Particle> my_own_clusters = kmeans_get_clusters();
+
+    for (const auto& id_and_clusters : robot_detections) {
+        auto _detected_robot_id = id_and_clusters.first;
+        auto detected_clusters = id_and_clusters.second.clusters;
+        particle_filter->update_weights_based_on_detection(detected_clusters);
+    }
 }
 
 void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
@@ -79,28 +88,36 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
 
 void Robot::detector_callback(const multi_robot_localization::clusters::ConstPtr& other_robot_clusters_ptr) {
     const bool not_me = other_robot_clusters_ptr->origin_robot_index != robot_index;
+    const double x = other_robot_clusters_ptr->origin_robot_x, y = other_robot_clusters_ptr->origin_robot_y;
     const bool robot_already_detected = robot_detections.find(other_robot_clusters_ptr->origin_robot_index) != robot_detections.end();
+    Detection detection;
 
-    if (not_me && has_detected(other_robot_clusters_ptr->origin_robot_x, other_robot_clusters_ptr->origin_robot_y)) {
-        multi_robot_localization::clusters other_robot_clusters;
-        other_robot_clusters.origin_robot_index = other_robot_clusters_ptr->origin_robot_index;
-        other_robot_clusters.origin_robot_x = other_robot_clusters_ptr->origin_robot_x;
-        other_robot_clusters.origin_robot_y = other_robot_clusters_ptr->origin_robot_y;
-        other_robot_clusters.origin_robot_angle = other_robot_clusters_ptr->origin_robot_angle;
+    if (not_me && has_detected(x, y, detection)) {
         for (auto other_robot_cluster : other_robot_clusters_ptr->clusters) {
-            other_robot_clusters.clusters.push_back(other_robot_cluster);
+            Particle cluster_particle;
+            cluster_particle.x = other_robot_cluster.x;
+            cluster_particle.y = other_robot_cluster.y;
+            cluster_particle.angle = other_robot_cluster.angle;
+            cluster_particle.weight = other_robot_cluster.weight;
+
+            detection.clusters.push_back(cluster_particle);
         }
-        robot_detections[other_robot_clusters.origin_robot_index] = other_robot_clusters;
-        printf("robot %d detected/updated.\n", other_robot_clusters.origin_robot_index);
+        robot_detections[other_robot_clusters_ptr->origin_robot_index] = detection;
+        printf("robot %d detected/updated.\n", other_robot_clusters_ptr->origin_robot_index);
     } else if (not_me && robot_already_detected) {
         robot_detections.erase(other_robot_clusters_ptr->origin_robot_index);
         printf("robot %d not being detectd anymore.\n", other_robot_clusters_ptr->origin_robot_index);
     }
 }
 
-bool Robot::has_detected(double x, double y) {
+bool Robot::has_detected(double x, double y, Detection& detection) {
     const bool is_path_free = particle_filter->is_path_free(previous_pose_2d->x, previous_pose_2d->y, x, y);
-    const double robots_distance = L2_DISTANCE((previous_pose_2d->x - x), (previous_pose_2d->y - y));
+    const double dx = (previous_pose_2d->x - x);
+    const double dy = (previous_pose_2d->y - y);
+    const double robots_distance = L2_DISTANCE(dx, dy);
+
+    detection.distance = robots_distance;
+    detection.angle = atan(dy/dx);
     printf("(%f,%f) - (%f,%f) is path free %d ?\n", x, y, previous_pose_2d->x, previous_pose_2d->y, is_path_free);
     return (robots_distance < meters_to_cells(DETECTION_THRESHOLD_METERS)) && is_path_free;
 }

@@ -64,7 +64,7 @@ ParticleFilter::ParticleFilter(vector<uint16_t>& angles_degrees)
     for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
         Particle p = create_particle(occupancy_grid->height_cells(), occupancy_grid->width_cells(), measurement_angles_degrees.size());
         particles[particle_idx] = p;
-        ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle << " id: " << p.id);
+        ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle);
     }
 
     encoded_particles.particles.clear();
@@ -179,13 +179,24 @@ void ParticleFilter::resample_particles() {
     kmeans_update_cluster_center();
 
     const vector<Particle> clusters = kmeans_get_clusters();
-    for (uint16_t cluster_idx = 0; cluster_idx < N_CLUSTERS; cluster_idx++) {
-        encoded_particle.x = clusters[cluster_idx].x;
-        encoded_particle.y = clusters[cluster_idx].y;
-        encoded_particle.weight = clusters[cluster_idx].weight;
+    for (uint16_t cluster_id = 0; cluster_id < N_CLUSTERS; cluster_id++) {
+        encoded_particle.x = clusters[cluster_id].x;
+        encoded_particle.y = clusters[cluster_id].y;
+        encoded_particle.weight = clusters[cluster_id].weight;
         encoded_particle.type = CLUSTER;
-        encoded_particles.particles[cluster_idx + CLUSTER_PARTICLE_FIRST_IDX] = encoded_particle;
+        encoded_particles.particles[cluster_id + CLUSTER_PARTICLE_FIRST_IDX] = encoded_particle;
     }
 
     particles = resampled_particles;
+}
+
+void ParticleFilter::update_weights_based_on_detection(vector<Particle> other_robot_clusters) {
+    const vector<Particle> my_clusters = kmeans_get_clusters();
+    for (auto& my_cluster : my_clusters) {
+        for (auto other_robot_cluster : other_robot_clusters) {
+            // my_cluster.weight *=
+        }
+    }
+    // normalize cluster weight
+
 }

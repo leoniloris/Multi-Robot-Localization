@@ -1,0 +1,5 @@
+multi_robot_localization/particle[] clusters
+uint8 origin_robot_index
+float64 origin_robot_x
+float64 origin_robot_y
+float64 origin_robot_angle
