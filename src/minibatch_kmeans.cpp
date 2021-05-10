@@ -72,4 +72,4 @@ void kmeans_update_cluster_center() {
     clusters = new_clusters;
 }
 
-const vector<Particle> kmeans_get_clusters() { return clusters; }
+const vector<Particle>* kmeans_get_clusters() { return (const vector<Particle>*)&clusters; }

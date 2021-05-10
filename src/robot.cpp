@@ -32,8 +32,6 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
 }
 
 void Robot::update_particle_filter_based_on_detections() {
-    const vector<Particle> my_own_clusters = kmeans_get_clusters();
-
     for (const auto& id_and_clusters : robot_detections) {
         auto _detected_robot_id = id_and_clusters.first;
         auto detected_clusters = id_and_clusters.second.clusters;
@@ -54,13 +52,13 @@ void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_met
 }
 
 void Robot::publush_clusters() {
-    const vector<Particle> clusters = kmeans_get_clusters();
+    const vector<Particle>* clusters = kmeans_get_clusters();
     multi_robot_localization::clusters clusters_to_publish;
     clusters_to_publish.origin_robot_index = robot_index;
     clusters_to_publish.origin_robot_x = previous_pose_2d->x;
     clusters_to_publish.origin_robot_y = previous_pose_2d->y;
     clusters_to_publish.origin_robot_angle = current_angle;
-    for (auto cluster : clusters) {
+    for (auto cluster : (*clusters)) {
         multi_robot_localization::particle cluster_to_publish;
         cluster_to_publish.x = cluster.x;
         cluster_to_publish.y = cluster.y;

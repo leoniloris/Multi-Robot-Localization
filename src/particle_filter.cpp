@@ -178,11 +178,11 @@ void ParticleFilter::resample_particles() {
     kmeans_assign_nearest_cluster_to_particles();
     kmeans_update_cluster_center();
 
-    const vector<Particle> clusters = kmeans_get_clusters();
+    const vector<Particle>* clusters = kmeans_get_clusters();
     for (uint16_t cluster_id = 0; cluster_id < N_CLUSTERS; cluster_id++) {
-        encoded_particle.x = clusters[cluster_id].x;
-        encoded_particle.y = clusters[cluster_id].y;
-        encoded_particle.weight = clusters[cluster_id].weight;
+        encoded_particle.x = (*clusters)[cluster_id].x;
+        encoded_particle.y = (*clusters)[cluster_id].y;
+        encoded_particle.weight = (*clusters)[cluster_id].weight;
         encoded_particle.type = CLUSTER;
         encoded_particles.particles[cluster_id + CLUSTER_PARTICLE_FIRST_IDX] = encoded_particle;
     }
@@ -197,9 +197,10 @@ void ParticleFilter::update_weights_based_on_detection(vector<Particle> other_ro
     }
 
     // update particles weights using likelihood of measurement
-    const vector<Particle> my_clusters = kmeans_get_clusters();
-    for (auto& my_cluster : my_clusters) {
+    const vector<Particle>* my_clusters = kmeans_get_clusters();
+    for (auto& my_cluster : (*my_clusters)) {
         for (auto other_robot_cluster : other_robot_clusters) {
+            // const double likelihood_of_measurement =
             // my_cluster.weight *=
         }
     }
