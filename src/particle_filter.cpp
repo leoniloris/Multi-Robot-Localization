@@ -191,12 +191,19 @@ void ParticleFilter::resample_particles() {
 }
 
 void ParticleFilter::update_weights_based_on_detection(vector<Particle> other_robot_clusters) {
+    // assign particles to nearest clusters
+    for (auto & particle : particles) {
+        kmeans_assign_nearest_cluster_to_particle(particle);
+    }
+
+    // update particles weights using likelihood of measurement
     const vector<Particle> my_clusters = kmeans_get_clusters();
     for (auto& my_cluster : my_clusters) {
         for (auto other_robot_cluster : other_robot_clusters) {
             // my_cluster.weight *=
         }
     }
+
     // normalize cluster weight
 
 }

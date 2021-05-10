@@ -24,20 +24,20 @@ void kmeans_init_clusteers(double height, double width) {
     }
 }
 
-static void assign_nearest_cluster_to_cluster_particle(Particle& cluster_particle) {
+void kmeans_assign_nearest_cluster_to_particle(Particle& particle) {
     double distance_to_nearest_cluster = numeric_limits<double>::infinity();
     for (ClusterId cluster_id = 0; cluster_id < N_CLUSTERS; cluster_id++) {
-        double distance_to_cluster = L2_DISTANCE((cluster_particle.x - clusters[cluster_id].x), (cluster_particle.y - clusters[cluster_id].y));
+        double distance_to_cluster = L2_DISTANCE((particle.x - clusters[cluster_id].x), (particle.y - clusters[cluster_id].y));
         if (distance_to_cluster < distance_to_nearest_cluster) {
             distance_to_nearest_cluster = distance_to_cluster;
-            cluster_particle.cluster_id = cluster_id;
+            particle.cluster_id = cluster_id;
         }
     }
 }
 
 void kmeans_assign_nearest_cluster_to_particles() {
     for (auto& p : cluster_particles) {
-        assign_nearest_cluster_to_cluster_particle(p);
+        kmeans_assign_nearest_cluster_to_particle(p);
     }
 }
 
