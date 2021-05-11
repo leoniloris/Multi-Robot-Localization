@@ -190,21 +190,38 @@ void ParticleFilter::resample_particles() {
     particles = resampled_particles;
 }
 
-void ParticleFilter::update_weights_based_on_detection(vector<Particle> other_robot_clusters) {
+void ParticleFilter::update_weights_based_on_detection(
+    const vector<Particle> other_robot_clusters, const double measured_distance, const double measured_angle) {
     // assign particles to nearest clusters
-    for (auto & particle : particles) {
+    for (auto& particle : particles) {
         kmeans_assign_nearest_cluster_to_particle(particle);
     }
 
     // update particles weights using likelihood of measurement
     const vector<Particle>* my_clusters = kmeans_get_clusters();
-    for (auto& my_cluster : (*my_clusters)) {
+    vector<double> weight_gain_for_clusters(N_CLUSTERS);
+    for (uint16_t my_cluster_id = 0; my_cluster_id < N_CLUSTERS; my_cluster_id++) {
+        auto my_cluster = (*my_clusters)[my_cluster_id];
+        double my_cluster_weight_gain = 0;
+
         for (auto other_robot_cluster : other_robot_clusters) {
-            // const double likelihood_of_measurement =
-            // my_cluster.weight *=
+            // TODO: function for this.. it's just a pain to create functions on classes.
+            const double dx = (my_cluster.x - other_robot_cluster.x);
+            const double dy = (my_cluster.y - other_robot_cluster.y);
+            const double cluster_distance = L2_DISTANCE(dx, dy);
+            const double cluster_angle = atan(dy / dx);
+            const double likelihood_of_distance = GAUSSIAN_LIKELIHOOD(measured_distance, LASER_SCAN_STD, cluster_distance);
+            const double likelihood_of_angle = PERIODIC_GAUSSIAN_LIKELIHOOD(measured_angle, ANGLE_STD_ODOMETRY, cluster_angle, 2 * PI);
+
+            my_cluster_weight_gain += (likelihood_of_distance + likelihood_of_angle) / 2.0;
         }
+
+        weight_gain_for_clusters[my_cluster_id] = my_cluster_weight_gain / other_robot_clusters.size();
+    }
+
+    for (auto& particle : particles) {
+        particle.weight *= weight_gain_for_clusters[particle.cluster_id];
     }
 
     // normalize cluster weight
-
 }

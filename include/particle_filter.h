@@ -51,7 +51,7 @@ class ParticleFilter {
     void estimate_measurements();
     void update_weights_from_robot_measurements(const vector<double>& robot_measurements);
     void resample_particles();
-    void update_weights_based_on_detection(vector<Particle> other_robot_clusters);
+    void update_weights_based_on_detection(const vector<Particle> other_robot_clusters, const double measured_distance, const double measured_angle);
     ~ParticleFilter() { delete occupancy_grid; };
 
     multi_robot_localization::particles encoded_particles;

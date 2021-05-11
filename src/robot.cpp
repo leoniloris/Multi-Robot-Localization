@@ -26,16 +26,17 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
     // the following order ought to be respected, since a few operations rely on the result of others
     particle_filter->estimate_measurements();
     particle_filter->update_weights_from_robot_measurements(robot_measurements);
-    update_particle_filter_based_on_detections();
+    // update_particle_filter_based_on_detections();
     broadcast_particles();
     particle_filter->resample_particles();
 }
 
 void Robot::update_particle_filter_based_on_detections() {
-    for (const auto& id_and_clusters : robot_detections) {
-        auto _detected_robot_id = id_and_clusters.first;
-        auto detected_clusters = id_and_clusters.second.clusters;
-        particle_filter->update_weights_based_on_detection(detected_clusters);
+    for (const auto& other_robot_id_and_detection : robot_detections) {
+        particle_filter->update_weights_based_on_detection(
+            other_robot_id_and_detection.second.clusters,
+            other_robot_id_and_detection.second.distance,
+            other_robot_id_and_detection.second.angle);
     }
 }
 
@@ -115,7 +116,7 @@ bool Robot::has_detected(double x, double y, Detection& detection) {
     const double robots_distance = L2_DISTANCE(dx, dy);
 
     detection.distance = robots_distance;
-    detection.angle = atan(dy/dx);
+    detection.angle = atan(dy / dx);
     printf("(%f,%f) - (%f,%f) is path free %d ?\n", x, y, previous_pose_2d->x, previous_pose_2d->y, is_path_free);
     return (robots_distance < meters_to_cells(DETECTION_THRESHOLD_METERS)) && is_path_free;
 }
