@@ -25,6 +25,7 @@ class OccupancyGrid {
    public:
     OccupancyGrid();
     ~OccupancyGrid(){};
+    bool is_cell_occupied(double x, double y);
     bool is_path_free(double x_begin, double y_begin, double x_end, double y_end);
     double free_path_length(double x_begin, double y_begin, double x_end, double y_end, bool* has_reached_end_of_path);
     uint16_t width_cells() { return n_columns; };

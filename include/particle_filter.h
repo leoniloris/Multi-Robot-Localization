@@ -43,6 +43,7 @@ class ParticleFilter {
     multi_robot_localization::particles encoded_particles;
     ParticleFilter(std::vector<uint16_t>& measurement_angles_degrees);
     bool is_path_free(double x_begin, double y_begin, double x_end, double y_end);
+    Particle create_particle_in_free_cell(double height, double width, uint16_t measurement_size);
     void move_particles(double forward_movement, double delta_angle);
     void estimate_measurements();
     void update_weights_from_robot_measurements(const std::vector<double>& robot_measurements);

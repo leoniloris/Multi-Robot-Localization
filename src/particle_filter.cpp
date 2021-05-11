@@ -39,6 +39,18 @@ Particle create_particle(double height, double width, uint16_t measurement_size)
     return p;
 }
 
+Particle ParticleFilter::create_particle_in_free_cell(double height, double width, uint16_t measurement_size) {
+    Particle p = Particle{};
+
+    bool is_cell_occupied = true;
+    while (is_cell_occupied) {
+        p = create_particle(height, width, measurement_size);
+        is_cell_occupied = occupancy_grid->is_cell_occupied(p.x, p.y);
+    }
+
+    return p;
+}
+
 ParticleFilter::ParticleFilter(vector<uint16_t>& angles_degrees)
     : particles(N_PARTICLES), resampled_particles(N_PARTICLES) {
     occupancy_grid = new OccupancyGrid();
@@ -140,7 +152,7 @@ void ParticleFilter::resample_particles() {
         if (particle_idx > N_ROAMING_PARTICLES) {
             resampled_particles[particle_idx] = p;
         } else {
-            resampled_particles[particle_idx] = create_particle(
+            resampled_particles[particle_idx] = create_particle_in_free_cell(
                 occupancy_grid->height_cells(),
                 occupancy_grid->width_cells(),
                 measurement_angles_degrees.size());

@@ -55,6 +55,10 @@ OccupancyGrid::OccupancyGrid() {
     ROS_INFO_STREAM("occupancy grid loaded: " << n_rows << " rows by " << n_columns << " columns (cells).");
 }
 
+bool OccupancyGrid::is_cell_occupied(double x, double y) {
+    return grid[x][y] == 1;
+}
+
 bool OccupancyGrid::is_path_free(double x_begin, double y_begin, double x_end, double y_end) {
     bool will_reach_end_of_path = false;
     free_path_length(x_begin, y_begin, x_end, y_end, &will_reach_end_of_path);
