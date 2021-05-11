@@ -15,7 +15,7 @@ import re
 
 MAX_N_ROBOTS = 15
 
-colors = ["", "red", "black", "blue"]
+colors = ["", "red", "cyan", "blue"]
 
 
 with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/robot.h", mode='r') as robot_h:

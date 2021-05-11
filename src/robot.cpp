@@ -26,7 +26,7 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
     // the following order ought to be respected, since a few operations rely on the result of others
     particle_filter->estimate_measurements();
     particle_filter->update_weights_from_robot_measurements(robot_measurements);
-    // update_particle_filter_based_on_detections();
+    update_particle_filter_based_on_detections();
     broadcast_particles();
     particle_filter->resample_particles();
 }
@@ -102,10 +102,10 @@ void Robot::detector_callback(const multi_robot_localization::clusters::ConstPtr
             detection.clusters.push_back(cluster_particle);
         }
         robot_detections[other_robot_clusters_ptr->origin_robot_index] = detection;
-        printf("robot %d detected/updated.\n", other_robot_clusters_ptr->origin_robot_index);
+        // printf("robot %d detected/updated.\n", other_robot_clusters_ptr->origin_robot_index);
     } else if (not_me && robot_already_detected) {
         robot_detections.erase(other_robot_clusters_ptr->origin_robot_index);
-        printf("robot %d not being detectd anymore.\n", other_robot_clusters_ptr->origin_robot_index);
+        // printf("robot %d not being detectd anymore.\n", other_robot_clusters_ptr->origin_robot_index);
     }
 }
 
@@ -116,8 +116,7 @@ bool Robot::has_detected(double x, double y, Detection& detection) {
     const double robots_distance = L2_DISTANCE(dx, dy);
 
     detection.distance = robots_distance;
-    detection.angle = atan(dy / dx);
-    printf("(%f,%f) - (%f,%f) is path free %d ?\n", x, y, previous_pose_2d->x, previous_pose_2d->y, is_path_free);
+    detection.angle = atan(dy / (dx + EPS));
     return (robots_distance < meters_to_cells(DETECTION_THRESHOLD_METERS)) && is_path_free;
 }
 

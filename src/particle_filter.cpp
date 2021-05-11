@@ -12,7 +12,6 @@
 
 using namespace std;
 
-#define EPS 0.00000001
 
 static random_device rd;
 static mt19937 random_number_generator;
@@ -149,6 +148,7 @@ void ParticleFilter::resample_particles() {
     // Resample particles, keeping some roaming
     for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
         Particle p = particles[distribution(rd)];
+
         if (particle_idx > N_ROAMING_PARTICLES) {
             resampled_particles[particle_idx] = p;
         } else {
@@ -190,8 +190,11 @@ void ParticleFilter::resample_particles() {
     particles = resampled_particles;
 }
 
-void ParticleFilter::update_weights_based_on_detection(
-    const vector<Particle> other_robot_clusters, const double measured_distance, const double measured_angle) {
+void ParticleFilter::update_weights_based_on_detection(const vector<Particle> other_robot_clusters, const double measured_distance, const double measured_angle) {
+    // Bigger standard deviation since a cluster has a huge
+    static const double detection_laser_std = LASER_SCAN_STD * 10.0;
+    static const double detection_angle_std = ANGLE_STD_ODOMETRY * 10.0;
+
     // assign particles to nearest clusters
     for (auto& particle : particles) {
         kmeans_assign_nearest_cluster_to_particle(particle);
@@ -199,29 +202,32 @@ void ParticleFilter::update_weights_based_on_detection(
 
     // update particles weights using likelihood of measurement
     const vector<Particle>* my_clusters = kmeans_get_clusters();
-    vector<double> weight_gain_for_clusters(N_CLUSTERS);
+    vector<double> weight_gain_for_clusters(N_CLUSTERS, EPS);
+    double sum_weight_gains = 0;
     for (uint16_t my_cluster_id = 0; my_cluster_id < N_CLUSTERS; my_cluster_id++) {
         auto my_cluster = (*my_clusters)[my_cluster_id];
         double my_cluster_weight_gain = 0;
 
         for (auto other_robot_cluster : other_robot_clusters) {
-            // TODO: function for this.. it's just a pain to create functions on classes.
+            // TODO: function for this.. it's just a pain to create functions on classes (on c++).
             const double dx = (my_cluster.x - other_robot_cluster.x);
             const double dy = (my_cluster.y - other_robot_cluster.y);
             const double cluster_distance = L2_DISTANCE(dx, dy);
-            const double cluster_angle = atan(dy / dx);
-            const double likelihood_of_distance = GAUSSIAN_LIKELIHOOD(measured_distance, LASER_SCAN_STD, cluster_distance);
-            const double likelihood_of_angle = PERIODIC_GAUSSIAN_LIKELIHOOD(measured_angle, ANGLE_STD_ODOMETRY, cluster_angle, 2 * PI);
+            const double cluster_angle = atan(dy / (dx + EPS));
 
-            my_cluster_weight_gain += (likelihood_of_distance + likelihood_of_angle) / 2.0;
+            const double likelihood_of_distance = GAUSSIAN_LIKELIHOOD(measured_distance, detection_laser_std, cluster_distance);
+            const double likelihood_of_angle = PERIODIC_GAUSSIAN_LIKELIHOOD(measured_angle, detection_angle_std, cluster_angle, 2.0 * PI);
+
+            my_cluster_weight_gain += my_cluster.weight * likelihood_of_distance * likelihood_of_angle;
         }
 
-        weight_gain_for_clusters[my_cluster_id] = my_cluster_weight_gain / other_robot_clusters.size();
+        weight_gain_for_clusters[my_cluster_id] = my_cluster_weight_gain;
+        sum_weight_gains += my_cluster_weight_gain;
     }
-
+    for (auto& w : weight_gain_for_clusters) {
+        w /= sum_weight_gains;
+    }
     for (auto& particle : particles) {
         particle.weight *= weight_gain_for_clusters[particle.cluster_id];
     }
-
-    // normalize cluster weight
 }

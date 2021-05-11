@@ -55,18 +55,18 @@ void kmeans_update_cluster_center() {
         const ClusterId cluster_id = cluster_particle.cluster_id;
         new_clusters[cluster_id].x += (cluster_particle.x * cluster_particle.weight);
         new_clusters[cluster_id].y += (cluster_particle.y * cluster_particle.weight);
-        new_clusters[cluster_id].weight += cluster_particle.weight;
+        new_clusters[cluster_id].weight += (cluster_particle.weight);
     }
     double sum_of_cluster_weights = 0;
     for (auto& cluster : new_clusters) {
         sum_of_cluster_weights += cluster.weight;
-        cluster.x /= cluster.weight;
-        cluster.y /= cluster.weight;
+        cluster.x /= (cluster.weight + EPS);
+        cluster.y /= (cluster.weight + EPS);
     }
 
     // Normalize cluster weights
     for (auto& cluster : new_clusters) {
-        cluster.weight /= sum_of_cluster_weights;
+        cluster.weight /= (sum_of_cluster_weights + EPS);
     }
 
     clusters = new_clusters;
