@@ -51,7 +51,7 @@ void kmeans_assign_nearest_cluster_to_particles() {
 }
 
 void kmeans_update_cluster_center() {
-    // Think about: the cluster here considers only the (x,y), byut actually, the angle should be clustered as well
+    // Think about: the cluster here considers only the (x,y), but actually, the angle should be clustered as well
     vector<Particle> new_clusters(N_CLUSTERS);
     for (auto& cluster : new_clusters) {
         cluster.x = 0;

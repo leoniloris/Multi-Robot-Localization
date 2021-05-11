@@ -5,6 +5,7 @@
   <!-- start world -->
   <node name="gazebo" pkg="gazebo_ros" type="gazebo"
    args="$(find multi_robot_localization)/worlds/rooms_small.world" respawn="false" output="screen" />
+   <!-- args="$(find multi_robot_localization)/worlds/cross_small.world" respawn="false" output="screen" /> -->
 
   <!-- include our robots -->
   <include file="$(find multi_robot_localization)/launch/robots.launch">
