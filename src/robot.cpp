@@ -6,7 +6,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "multi_robot_localization/InfoForDetector.h"
+#include "minibatch_kmeans.h"
+#include "multi_robot_localization/clusters.h"
 #include "multi_robot_localization/particles.h"
 #include "nav_msgs/Odometry.h"
 #include "occupancy_grid.h"
@@ -19,16 +20,24 @@
 
 static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation);
 
-#include <chrono>
 void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
     update_measurements(scan_meters);
+
+    // the following order ought to be respected, since a few operations rely on the result of others
     particle_filter->estimate_measurements();
-
     particle_filter->update_weights_from_robot_measurements(robot_measurements);
-    //update_weights(); //Acessa o dicionario de robot detections e chama funcoes do particle_filters
+    update_particle_filter_based_on_detections();
     broadcast_particles();
-
     particle_filter->resample_particles();
+}
+
+void Robot::update_particle_filter_based_on_detections() {
+    for (const auto& other_robot_id_and_detection : robot_detections) {
+        particle_filter->update_weights_based_on_detection(
+            other_robot_id_and_detection.second.clusters,
+            other_robot_id_and_detection.second.distance,
+            other_robot_id_and_detection.second.angle);
+    }
 }
 
 void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
@@ -43,6 +52,25 @@ void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_met
     }
 }
 
+void Robot::publush_clusters() {
+    const vector<Particle>* clusters = kmeans_get_clusters();
+    multi_robot_localization::clusters clusters_to_publish;
+    clusters_to_publish.origin_robot_index = robot_index;
+    clusters_to_publish.origin_robot_x = previous_pose_2d->x;
+    clusters_to_publish.origin_robot_y = previous_pose_2d->y;
+    clusters_to_publish.origin_robot_angle = current_angle;
+    for (auto cluster : (*clusters)) {
+        multi_robot_localization::particle cluster_to_publish;
+        cluster_to_publish.x = cluster.x;
+        cluster_to_publish.y = cluster.y;
+        cluster_to_publish.angle = cluster.angle;
+        cluster_to_publish.type = CLUSTER;
+        clusters_to_publish.clusters.push_back(cluster_to_publish);
+    }
+
+    infos_to_detector.publish(clusters_to_publish);
+}
+
 void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     static geometry_msgs::Point position;
     position.x = meters_to_cells(odom_meters->pose.pose.position.x) + X_CENTER;
@@ -54,37 +82,42 @@ void Robot::odometry_callback(const nav_msgs::Odometry::ConstPtr& odom_meters) {
     forward_movement = is_moving_forward ? forward_movement : -forward_movement;
     particle_filter->move_particles(forward_movement, delta_pose_2d.theta);
 
-
-    multi_robot_localization::InfoForDetector my_info;
-    my_info.id = robot_index;
-    my_info.x = previous_pose_2d->x;
-    my_info.y = previous_pose_2d->y;
-    my_info.angle = previous_pose_2d->theta;
-    //my_info.cluster.push_back(x, y, peso)
-    infos_to_detector.publish(my_info);
+    publush_clusters();
 }
 
-void Robot::detector_clbk(const multi_robot_localization::InfoForDetector::ConstPtr& _robot_info) {
-    multi_robot_localization::InfoForDetector robot_info;
-    robot_info.id = _robot_info->id;
-    robot_info.x = _robot_info->x;
-    robot_info.y = _robot_info->y;
-    robot_info.angle = _robot_info->angle;
+void Robot::detector_callback(const multi_robot_localization::clusters::ConstPtr& other_robot_clusters_ptr) {
+    const bool not_me = other_robot_clusters_ptr->origin_robot_index != robot_index;
+    const double x = other_robot_clusters_ptr->origin_robot_x, y = other_robot_clusters_ptr->origin_robot_y;
+    const bool robot_already_detected = robot_detections.find(other_robot_clusters_ptr->origin_robot_index) != robot_detections.end();
+    Detection detection;
 
-    if ((robot_info.id != robot_index) && has_detected(robot_info)) {
-        robot_detections[robot_info.id] = robot_info;
-        ROS_INFO_STREAM("DETECTOU ROBO:" << robot_info.id);
-    } else if ((robot_info.id != robot_index) && (robot_detections.find(robot_info.id) != robot_detections.end())) {
-        robot_detections.erase(robot_info.id);
-        ROS_INFO_STREAM("REMOVEU ROBO:" << robot_info.id);
+    if (not_me && has_detected(x, y, detection)) {
+        for (auto other_robot_cluster : other_robot_clusters_ptr->clusters) {
+            Particle cluster_particle;
+            cluster_particle.x = other_robot_cluster.x;
+            cluster_particle.y = other_robot_cluster.y;
+            cluster_particle.angle = other_robot_cluster.angle;
+            cluster_particle.weight = other_robot_cluster.weight;
+
+            detection.clusters.push_back(cluster_particle);
+        }
+        robot_detections[other_robot_clusters_ptr->origin_robot_index] = detection;
+        // printf("robot %d detected/updated.\n", other_robot_clusters_ptr->origin_robot_index);
+    } else if (not_me && robot_already_detected) {
+        robot_detections.erase(other_robot_clusters_ptr->origin_robot_index);
+        // printf("robot %d not being detectd anymore.\n", other_robot_clusters_ptr->origin_robot_index);
     }
 }
 
-bool Robot::has_detected(multi_robot_localization::InfoForDetector other_robot_info) {
-    //const bool is_path_free = particle_filter->is_path_free((double)previous_pose_2d->x, (double)previous_pose_2d->y, (double)other_robot_info.x, (double)other_robot_info.y);
+bool Robot::has_detected(double x, double y, Detection& detection) {
+    const bool is_path_free = particle_filter->is_path_free(previous_pose_2d->x, previous_pose_2d->y, x, y);
+    const double dx = (previous_pose_2d->x - x);
+    const double dy = (previous_pose_2d->y - y);
+    const double robots_distance = L2_DISTANCE(dx, dy);
 
-    const double robots_distance = L2_DISTANCE((previous_pose_2d->x - other_robot_info.x), (previous_pose_2d->y - other_robot_info.y));
-    return (robots_distance < meters_to_cells(DETECTION_THRESHOLD_METERS));  // && is_path_free;
+    detection.distance = robots_distance;
+    detection.angle = atan(dy / (dx + EPS));
+    return (robots_distance < meters_to_cells(DETECTION_THRESHOLD_METERS)) && is_path_free;
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
@@ -130,10 +163,10 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
 
     laser_scan = node_handle.subscribe<sensor_msgs::LaserScan>(laser_topic, PUBSUB_QUEUE_SIZE, &Robot::laser_callback, this);
     odometry = node_handle.subscribe<nav_msgs::Odometry>(odometry_topic, PUBSUB_QUEUE_SIZE, &Robot::odometry_callback, this);
-    broadcaster = node_handle.advertise<multi_robot_localization::particles>("particles_broadcast", PUBSUB_QUEUE_SIZE);
+    broadcaster = node_handle.advertise<multi_robot_localization::particles>("plot_info_broadcast", PUBSUB_QUEUE_SIZE);
 
-    all_robots_info = node_handle.subscribe<multi_robot_localization::InfoForDetector>("detector_t", PUBSUB_QUEUE_SIZE, &Robot::detector_clbk, this);
-    infos_to_detector = node_handle.advertise<multi_robot_localization::InfoForDetector>("detector_t", PUBSUB_QUEUE_SIZE);
+    all_robots_info = node_handle.subscribe<multi_robot_localization::clusters>("robot_inf_broadcast", PUBSUB_QUEUE_SIZE, &Robot::detector_callback, this);
+    infos_to_detector = node_handle.advertise<multi_robot_localization::clusters>("robot_inf_broadcast", PUBSUB_QUEUE_SIZE);
 
     assert(measurement_angles_degrees.size() == robot_measurements.size());
 }

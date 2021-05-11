@@ -8,8 +8,11 @@
 #include <vector>
 
 #define CELLS_PER_METER (10.0)
-#define X_CENTER (70.5)
-#define Y_CENTER (35.5)
+// #define X_CENTER (70.5) // rooms_small
+// #define Y_CENTER (35.5) // rooms_small
+
+#define X_CENTER (75) // cross_small
+#define Y_CENTER (75) // cross_small
 
 geometry_msgs::Pose2D meters_to_cells(geometry_msgs::Pose2D pose);
 double meters_to_cells(double distance);
@@ -22,6 +25,7 @@ class OccupancyGrid {
    public:
     OccupancyGrid();
     ~OccupancyGrid(){};
+    bool is_cell_occupied(double x, double y);
     bool is_path_free(double x_begin, double y_begin, double x_end, double y_end);
     double free_path_length(double x_begin, double y_begin, double x_end, double y_end, bool* has_reached_end_of_path);
     uint16_t width_cells() { return n_columns; };

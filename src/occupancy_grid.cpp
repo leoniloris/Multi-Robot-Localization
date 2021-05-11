@@ -28,7 +28,8 @@ double meters_to_cells(double distance) {
 
 OccupancyGrid::OccupancyGrid() {
     const string home_folder = string(getenv("HOME"));
-    const string path = home_folder + string("/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv");
+    // const string path = home_folder + string("/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv");
+    const string path = home_folder + string("/catkin_ws/src/multi_robot_localization/occupancy_grid/cross_small.csv");
 
     string line;
     ifstream f(path.c_str());
@@ -51,6 +52,10 @@ OccupancyGrid::OccupancyGrid() {
     n_rows = grid.size();
     n_columns = grid[0].size();
     ROS_INFO_STREAM("occupancy grid loaded: " << n_rows << " rows by " << n_columns << " columns (cells).");
+}
+
+bool OccupancyGrid::is_cell_occupied(double x, double y) {
+    return grid[x][y] == 1;
 }
 
 bool OccupancyGrid::is_path_free(double x_begin, double y_begin, double x_end, double y_end) {

@@ -13,9 +13,7 @@ import sys
 import os
 import re
 
-MAX_N_ROBOTS = 15
-
-colors = ["", "red", "black", "blue"]
+colors = ["", "red", "cyan", "blue"]
 
 
 with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/robot.h", mode='r') as robot_h:
@@ -51,7 +49,8 @@ class MapServer:
     def _setup_map_plot(self):
         self._occupancy_grid = np.loadtxt(
             os.environ["HOME"] +
-            "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv",
+            # "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv",
+            "/catkin_ws/src/multi_robot_localization/occupancy_grid/cross_small.csv",
             delimiter=",",
         )
 
@@ -95,14 +94,14 @@ class MapServer:
 
     def _create_new_particle(self, particle, robot_index, particle_idx):
         particle_patches = self._create_particle_patches(
-            particle.x, particle.y, particle.angle, particle.type, particle.measurements, robot_index)
+            particle.x, particle.y, particle.angle, particle.type, particle.measurements, robot_index, particle.weight)
 
         for patch_id, particle_patch in enumerate(particle_patches):
             self._particles_patches[(
                 robot_index, patch_id, particle_idx)] = particle_patch
             self._axis.add_patch(particle_patch)
 
-    def _create_particle_patches(self, x_cells, y_cells, angle, particle_type, measurements, robot_index):
+    def _create_particle_patches(self, x_cells, y_cells, angle, particle_type, measurements, robot_index, weight):
         # inverted x-y!
         x_grid = y_cells
         y_grid = x_cells
@@ -125,13 +124,13 @@ class MapServer:
                  for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
         elif ParticleType(particle_type) == ParticleType.CLUSTER:
             print(x_grid, y_grid)
-            return [patches.Rectangle((x_grid, y_grid), 1, 1, alpha=0.5, color="black")]
+            return [patches.Circle((x_grid, y_grid), weight*4 , alpha=0.5, color="black")]
         else:
             raise Exception("Invalid particle type")
 
 
 if __name__ == "__main__":
-    mapserver = MapServer("particles_broadcast")
+    mapserver = MapServer("plot_info_broadcast")
 
     def signal_handler(signal, frame):
         print("exitting...")
