@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include "math_utilities.h"
-#include "multi_robot_localization/InfoForDetector.h"
+#include "multi_robot_localization/clusters.h"
 #include "nav_msgs/Odometry.h"
 #include "particle_filter.h"
 #include "ros/ros.h"
@@ -24,6 +24,12 @@ enum ParticleType {
     CLUSTER,
 };
 
+typedef struct _Detection {
+    double distance;
+    double angle;
+    std::vector<Particle> clusters;
+} Detection;
+
 class Robot {
    private:
     void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan);
@@ -31,8 +37,10 @@ class Robot {
     void odometry_callback(const nav_msgs::Odometry::ConstPtr& scan);
     geometry_msgs::Pose2D compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation);
     multi_robot_localization::particle get_robot_particle_to_publish();
-    void detector_clbk(const multi_robot_localization::InfoForDetector::ConstPtr& _robot_info);
-    bool has_detected(multi_robot_localization::InfoForDetector other_robot_info);
+    void detector_callback(const multi_robot_localization::clusters::ConstPtr& other_robot_clusters_ptr);
+    bool has_detected(double x, double y, Detection& detection);
+    void publush_clusters();
+    void update_particle_filter_based_on_detections();
 
     uint8_t robot_index;
     ros::NodeHandle* node_handle;
@@ -46,7 +54,7 @@ class Robot {
     double current_angle;                               // Not to be used, just for the robot simulation
     std::vector<uint16_t> measurement_angles_degrees{0, 45, 90, 135, 180, 225, 270, 315};
     std::vector<double> robot_measurements{0, 0, 0, 0, 0, 0, 0, 0};
-    std::unordered_map<uint16_t, multi_robot_localization::InfoForDetector> robot_detections;
+    std::unordered_map<uint16_t, Detection> robot_detections;
 
    public:
     Robot(uint8_t robot_index, int argc, char** argv);
