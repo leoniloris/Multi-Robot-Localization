@@ -124,7 +124,7 @@ class MapServer:
                  for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
         elif ParticleType(particle_type) == ParticleType.CLUSTER:
             print(x_grid, y_grid)
-            return [patches.Circle((x_grid, y_grid), weight*4 , alpha=0.5, color="black")]
+            return [patches.Circle((x_grid, y_grid), weight*4 , alpha=0.5, color=color)]
         else:
             raise Exception("Invalid particle type")
 
