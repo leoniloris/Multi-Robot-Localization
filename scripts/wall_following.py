@@ -1,143 +1,62 @@
 #! /usr/bin/env python
-
-# import ros stuff
 import rospy
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
-from nav_msgs.msg import Odometry
-from tf import transformations
 
+import numpy as np
 import math
 
 pub_ = None
-regions_ = {
-    'right': 0,
-    'fright': 0,
-    'front': 0,
-    'fleft': 0,
-    'left': 0,
-}
-state_ = 0
-state_dict_ = {
-    0: 'find the wall',
-    1: 'turn left',
-    2: 'follow the wall',
-}
+angles = np.arange(-180, 180)
+
+mvmt_msg = Twist()
+
 
 def clbk_laser(msg):
-    global regions_
-    regions_ = {
-        'right':  min(msg.ranges[-90], 10),   #-90 Right
-        'fright': min(msg.ranges[-45], 10),    #-45 Front right
-        'front':  min(msg.ranges[0], 10),      #0 Front
-        'fleft':  min(msg.ranges[45], 10),     #45 Front Left
-        'left':   min(msg.ranges[90], 10),     #90 - Left
-    }
+    global pub_, mvmt_msg
+    scans = np.asarray(msg.ranges)
+    scans[scans > 0.4] = 0.4
+
+    scan_vectors = np.vstack([
+        np.asarray([np.sin(angle*np.pi/180)*scans[angle],
+                   np.cos(angle*np.pi/180)*scans[angle]])
+        for angle in angles
+    ])
+
+    # follow in a -90 degrees difference from walls's normal vector (from robot lasers)
+    wall_normal = scan_vectors.mean(axis=0)
+    rotation = -(np.pi*0.5)
+    rotated_wall_normal = wall_normal @ np.asarray([
+        [np.cos(rotation), -np.sin(rotation)],
+        [np.sin(rotation), np.cos(rotation)]
+    ])
 
 
-    take_action()
-
-
-def change_state(state):
-    global state_, state_dict_
-    if state is not state_:
-        print('Wall follower - [%s] - %s' % (state, state_dict_[state]))
-        state_ = state
-
-def take_action():
-    global regions_
-    regions = regions_
-    msg = Twist()
-    linear_x = 0
-    angular_z = 0
-
-    state_description = ''
-
-    d = 2
-
-    if regions['front'] > d and regions['fleft'] > d and regions['fright'] > d:
-        state_description = 'case 1 - nothing'
-        change_state(0)
-    elif regions['front'] < d and regions['fleft'] > d and regions['fright'] > d:
-        state_description = 'case 2 - front'
-        change_state(1)
-    elif regions['front'] > d and regions['fleft'] > d and regions['fright'] < d:
-        state_description = 'case 3 - fright'
-        change_state(2)
-    elif regions['front'] > d and regions['fleft'] < d and regions['fright'] > d:
-        state_description = 'case 4 - fleft'
-        change_state(0)
-    elif regions['front'] < d and regions['fleft'] > d and regions['fright'] < d:
-        state_description = 'case 5 - front and fright'
-        change_state(1)
-    elif regions['front'] < d and regions['fleft'] < d and regions['fright'] > d:
-        state_description = 'case 6 - front and fleft'
-        change_state(1)
-    elif regions['front'] < d and regions['fleft'] < d and regions['fright'] < d:
-        state_description = 'case 7 - front and fleft and fright'
-        change_state(1)
-    elif regions['front'] > d and regions['fleft'] < d and regions['fright'] < d:
-        state_description = 'case 8 - fleft and fright'
-        change_state(0)
-    else:
-        state_description = 'unknown case'
-        rospy.loginfo(regions)
-
-def find_wall():
-    msg = Twist()
-    msg.linear.x = 0.2
-    msg.angular.z = -0.3
-    return msg
-
-def turn_left():
-    msg = Twist()
-    msg.angular.z = 0.3
-    return msg
-
-def follow_the_wall():
-    global regions_
-
-    msg = Twist()
-    msg.linear.x = 0.5
-
-    return msg
+    mvmt_msg.linear.x = 0.2  # np.linalg.norm(rotated_wall_normal)
+    rotated_wall_normal[0] = 0 if abs(rotated_wall_normal[0]) < 0.01 else rotated_wall_normal[0]
+    mvmt_angle = np.arctan2(-rotated_wall_normal[0], rotated_wall_normal[1] )
+    print(mvmt_angle*180/np.pi)
+    mvmt_msg.angular.z = mvmt_angle
 
 
 def main():
     global pub_
+    global mvmt_msg
 
     rospy.init_node('reading_laser')
 
     robot_suffix = 1
     laser_topic = '/ugv' + str(robot_suffix) + '/scan'
     vel_topic = '/ugv' + str(robot_suffix) + '/cmd_vel'
-    print(laser_topic)
-    print(vel_topic)
-
 
     pub_ = rospy.Publisher(vel_topic, Twist, queue_size=1)
-
     sub = rospy.Subscriber(laser_topic, LaserScan, clbk_laser)
-
     rate = rospy.Rate(20)
 
-    print('Wall follower - [%s]' % (state_))
-
     while not rospy.is_shutdown():
-        msg = Twist()
-        if state_ == 0:
-            msg = find_wall()
-        elif state_ == 1:
-            msg = turn_left()
-        elif state_ == 2:
-            msg = follow_the_wall()
-            pass
-        else:
-            rospy.logerr('Unknown state!')
-
-        pub_.publish(msg)
-
+        pub_.publish(mvmt_msg)
         rate.sleep()
+
 
 if __name__ == '__main__':
     main()
