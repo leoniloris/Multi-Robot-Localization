@@ -113,15 +113,14 @@ class MapServer:
             return [patches.FancyArrow(x_grid, y_grid, dx, dy, width=(3/15), head_length=(10/15), alpha=0.3, color=color)]
 
         elif ParticleType(particle_type) == ParticleType.ROBOT:
-            robot_patch = patches.Circle(
-                (x_grid, y_grid), 1, alpha=1, color=color)
+            robot_patch = patches.Circle((x_grid, y_grid), 1, alpha=1, color=color)
             if len(measurements) != len(MEASUREMENT_ANGLES):
                 print(
                     f"measurements have an incorrect size: {measurements} != {MEASUREMENT_ANGLES}")
                 return []
-            return [robot_patch] +\
-                [patches.Rectangle((x_grid, y_grid), (8/15), measurement, angle=(-angle*180/np.pi - measurement_angle), color=color, alpha=0.3)
-                 for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
+            # return [robot_patch] +\
+            return [patches.Rectangle((x_grid, y_grid), (8/15), measurement, angle=(-angle*180/np.pi - measurement_angle), color=color, alpha=0.3)
+                    for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
         elif ParticleType(particle_type) == ParticleType.CLUSTER:
             print(x_grid, y_grid)
             return [patches.Circle((x_grid, y_grid), weight*4 , alpha=0.5, color=color)]

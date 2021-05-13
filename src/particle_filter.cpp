@@ -191,7 +191,7 @@ void ParticleFilter::resample_particles() {
 }
 
 void ParticleFilter::update_weights_based_on_detection(const vector<Particle> other_robot_clusters, const double measured_distance, const double measured_angle) {
-    // Bigger standard deviation since a cluster has a huge
+    // Bigger standard deviation since a cluster has a huge diversity
     static const double detection_laser_std = LASER_SCAN_STD * 10.0;
     static const double detection_angle_std = ANGLE_STD_ODOMETRY * 10.0;
 

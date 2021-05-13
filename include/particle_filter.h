@@ -13,7 +13,7 @@ using namespace std;
 
 #define PI 3.141592653589793238
 
-#define N_CLUSTERS (4)
+#define N_CLUSTERS (8)
 #define N_PARTICLES (10000)
 #define N_ROAMING_PARTICLES (N_PARTICLES / 10)
 
