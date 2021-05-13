@@ -29,6 +29,10 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
     update_particle_filter_based_on_detections();
     broadcast_particles();
     particle_filter->resample_particles();
+
+    if (previous_pose_2d != nullptr) {
+        particle_filter->save_state(robot_index, previous_pose_2d->x, previous_pose_2d->y, previous_pose_2d->theta);
+    }
 }
 
 void Robot::update_particle_filter_based_on_detections() {

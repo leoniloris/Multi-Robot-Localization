@@ -1,6 +1,7 @@
 #include "particle_filter.h"
 
 #include <cassert>
+#include <fstream>
 #include <random>
 
 #include "math_utilities.h"
@@ -11,7 +12,6 @@
 #include "ros/ros.h"
 
 using namespace std;
-
 
 static random_device rd;
 static mt19937 random_number_generator;
@@ -229,5 +229,44 @@ void ParticleFilter::update_weights_based_on_detection(const vector<Particle> ot
     }
     for (auto& particle : particles) {
         particle.weight *= weight_gain_for_clusters[particle.cluster_id];
+    }
+}
+
+//------------------------------------------------------------//
+// For experiments
+//------------------------------------------------------------//
+
+static vector<vector<double>> saved_locations;
+
+void ParticleFilter::save_state(uint16_t robot_id, double robot_x, double robot_y, double robot_angle) {
+    static uint32_t new_rows_counter = 0;
+
+    // append robot location and clusters locations to saved_locations
+    vector<double> locations{robot_x, robot_y, robot_angle};
+    const vector<Particle>* clusters = kmeans_get_clusters();
+    for (auto cluster : (*clusters)) {
+        locations.push_back(cluster.x);
+        locations.push_back(cluster.y);
+        locations.push_back(cluster.angle);
+    }
+
+    saved_locations.push_back(locations);
+
+    // in a slower rate, writes to file and clear saved_locations
+    const string home_folder = string(getenv("HOME"));
+    const string path = home_folder + string("/catkin_ws/src/multi_robot_localization/") + string("robot") + to_string(robot_id) + string(".csv");
+    if ((new_rows_counter++) % 10 == 0) {
+        ofstream outfile;
+        outfile.open(path, ios_base::app);
+
+        for (auto saved_location : saved_locations) {
+            ostringstream oss;
+            copy(saved_location.begin(), saved_location.end() - 1, ostream_iterator<double>(oss, ","));
+            oss << saved_location.back();
+
+            outfile << oss.str() << endl;
+        }
+
+        saved_locations.clear();
     }
 }
