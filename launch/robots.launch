@@ -6,16 +6,24 @@
     command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_burger.urdf.xacro" />
 
   <!-- Spawn one robot-->
-  <group ns="$(eval 'ugv' + str(arg('n_robots')))" >
-    <param name="tf_prefix" value="$(eval 'ugv' + str(arg('n_robots')) + '_tf')" />
+  <group ns="$(eval 'ugv' + str(1))" >
+    <param name="tf_prefix" value="$(eval 'ugv' + str(1) + '_tf')" />
     <include file="$(find multi_robot_localization)/launch/one_robot.launch" >
-      <arg name="init_pose" value="-x $(arg n_robots) -y 1 -z 0"/>
-      <arg name="robot_name"  value="$(eval 'ugv' + str(arg('n_robots')))" />
+      <arg name="init_pose" value="-x -1 -y -2 -z 0"/>
+      <arg name="robot_name"  value="$(eval 'ugv' + str(1))" />
+    </include>
+  </group>
+
+  <group ns="$(eval 'ugv' + str(2))" >
+    <param name="tf_prefix" value="$(eval 'ugv' + str(2) + '_tf')" />
+    <include file="$(find multi_robot_localization)/launch/one_robot.launch" >
+      <arg name="init_pose" value="-x 6 -y -2 -z 0"/>
+      <arg name="robot_name"  value="$(eval 'ugv' + str(2))" />
     </include>
   </group>
 
   <!-- recursively start new UgV -->
-  <include file="$(find multi_robot_localization)/launch/robots.launch" if="$(eval arg('n_robots') - 1 > 0)">
+  <!-- <include file="$(find multi_robot_localization)/launch/robots.launch" if="$(eval arg('n_robots') - 1 > 0)">
       <arg name="n_robots" value="$(eval arg('n_robots') - 1)"/>
-  </include>
+  </include> -->
 </launch>
