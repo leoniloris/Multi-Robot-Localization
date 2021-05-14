@@ -24,8 +24,8 @@ Particle create_particle(double height, double width, uint16_t measurement_size)
     // static uniform_real_distribution<double> distribution_x(45, 45 + 0.1);
     // static uniform_real_distribution<double> distribution_y(80, 80 + 0.1);
     // static uniform_real_distribution<double> distribution_angle(0/2, 0/2 +0.0001);
-    static uniform_real_distribution<double> distribution_x(0, height);
-    static uniform_real_distribution<double> distribution_y(0, width);
+    static uniform_real_distribution<double> distribution_x(0, height-1.0);
+    static uniform_real_distribution<double> distribution_y(0, width-1.0);
     static uniform_real_distribution<double> distribution_angle(0, 2 * PI);
     Particle p = Particle{};
     p.x = distribution_x(random_number_generator);
