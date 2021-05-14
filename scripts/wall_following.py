@@ -104,11 +104,11 @@ def follow_the_wall():
 
 
 def main():
+    import sys
+    robot_suffix = sys.argv[1]
     global pub_
 
-    rospy.init_node('reading_laser')
-
-    robot_suffix = 1
+    rospy.init_node(f'wall_following_{robot_suffix}')
     laser_topic = '/ugv' + str(robot_suffix) + '/scan'
     vel_topic = '/ugv' + str(robot_suffix) + '/cmd_vel'
     print(laser_topic)
