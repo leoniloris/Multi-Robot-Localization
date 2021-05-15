@@ -29,7 +29,7 @@ def clbk_laser(msg):
     regions_ = {
         'right':  min(msg.ranges[-90], 10),   #-90 Right
         'fright': min(msg.ranges[-45], 10),    #-45 Front right
-        'front':  min(msg.ranges[0], 10),      #0 Front
+        'front':  min(msg.ranges[-10], msg.ranges[0], msg.ranges[10], 10),      #0 Front
         'fleft':  min(msg.ranges[45], 10),     #45 Front Left
         'left':   min(msg.ranges[90], 10),     #90 - Left
     }
@@ -86,12 +86,12 @@ def take_action():
 def find_wall():
     msg = Twist()
     msg.linear.x = 0.2
-    msg.angular.z = -0.4
+    msg.angular.z = -0.5
     return msg
 
 def turn_left():
     msg = Twist()
-    msg.angular.z = 0.4
+    msg.angular.z = 0.5
     return msg
 
 def follow_the_wall():
