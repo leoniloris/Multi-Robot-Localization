@@ -9,7 +9,7 @@
   <group ns="$(eval 'ugv' + str(1))" >
     <param name="tf_prefix" value="$(eval 'ugv' + str(1) + '_tf')" />
     <include file="$(find multi_robot_localization)/launch/one_robot.launch" >
-      <arg name="init_pose" value="-x -0 -y -0 -z 0"/>
+      <arg name="init_pose" value="-x -6 -y -3 -z 0"/>
       <arg name="robot_name"  value="$(eval 'ugv' + str(1))" />
     </include>
   </group>
@@ -17,7 +17,7 @@
   <group ns="$(eval 'ugv' + str(2))" >
     <param name="tf_prefix" value="$(eval 'ugv' + str(2) + '_tf')" />
     <include file="$(find multi_robot_localization)/launch/one_robot.launch" >
-      <arg name="init_pose" value="-x 6 -y -3 -z 0"/>
+      <arg name="init_pose" value="-x 6 -y 3 -z 0"/>
       <arg name="robot_name"  value="$(eval 'ugv' + str(2))" />
     </include>
   </group>
