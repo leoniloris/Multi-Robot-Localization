@@ -106,10 +106,10 @@ void Robot::detector_callback(const multi_robot_localization::clusters::ConstPtr
             detection.clusters.push_back(cluster_particle);
         }
         robot_detections[other_robot_clusters_ptr->origin_robot_index] = detection;
-        // printf("robot %d detected/updated.\n", other_robot_clusters_ptr->origin_robot_index);
+        printf("Robot %d detected/updated.\n", other_robot_clusters_ptr->origin_robot_index);
     } else if (not_me && robot_already_detected) {
         robot_detections.erase(other_robot_clusters_ptr->origin_robot_index);
-        // printf("robot %d not being detectd anymore.\n", other_robot_clusters_ptr->origin_robot_index);
+        printf("Robot %d not being detected anymore.\n", other_robot_clusters_ptr->origin_robot_index);
     }
 }
 

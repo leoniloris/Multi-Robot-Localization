@@ -248,6 +248,7 @@ void ParticleFilter::save_state(uint16_t robot_id, double robot_x, double robot_
         locations.push_back(cluster.x);
         locations.push_back(cluster.y);
         locations.push_back(cluster.angle);
+        locations.push_back(cluster.weight);
     }
 
     saved_locations.push_back(locations);
