@@ -2,11 +2,11 @@
 set -e
 
 function kill_processes {
-    sudo pkill -f robot_node
-    sudo pkill -f wall_following
-    sudo pkill -f gazebo
-    sudo pkill -f python3
-    sudo pkill -f noetic
+    pkill -f robot_node
+    pkill -f wall_following
+    pkill -f gazebo
+    pkill -f python3
+    pkill -f noetic
 }
 
 function run_trial {
@@ -21,11 +21,11 @@ function run_trial {
 
 trap kill_processes SIGINT
 
-for TRIAL in {1..5}; do
+for TRIAL in {1..10}; do
     echo "==========================================================="
     echo "================ Running trial ${TRIAL}... ================"
     echo "==========================================================="
-    run_trial
-    sleep 300
+    TRIAL=${TRIAL} run_trial
+    sleep 30
     kill_processes
 done

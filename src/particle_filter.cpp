@@ -254,13 +254,16 @@ void ParticleFilter::save_state(uint16_t robot_id, double robot_x, double robot_
     saved_locations.push_back(locations);
 
     // in a slower rate, writes to file and clear saved_locations
-    const string path = string(getenv("HOME")) +
-                        string("/catkin_ws/src/multi_robot_localization/") +
-                        string("robot") +
-                        to_string(robot_id) +
-                        string("with_hard_detection_trial_") +
-                        string(getenv("TRIAL")) +
-                        string(".csv");
+    if(getenv("TRIAL") == NULL) {
+        printf("Varialbe TRIAL not set. ABORTING.\n");
+        exit(1);
+    }
+
+    string path = string(getenv("HOME")) +
+                  string("/catkin_ws/src/multi_robot_localization/robot") + to_string(robot_id) +
+                  string("with_hard_detection_trial_") +
+                  string(getenv("TRIAL")) +
+                  string(".csv");
     if ((new_rows_counter++) % 10 == 0) {
         ofstream outfile;
         outfile.open(path, ios_base::app);
