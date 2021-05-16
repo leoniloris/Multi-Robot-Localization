@@ -10,8 +10,9 @@ function kill_processes {
 }
 
 function run_trial {
+    sleep 4
     roslaunch -v multi_robot_localization main.launch n_robots:=2 &
-    sleep 5
+    sleep 4
 
     rosrun multi_robot_localization robot_node 1 & \
     python3 src/multi_robot_localization/scripts/wall_following.py 1 & \
@@ -25,7 +26,8 @@ for TRIAL in {1..10}; do
     echo "==========================================================="
     echo "================ Running trial ${TRIAL}... ================"
     echo "==========================================================="
+
     TRIAL=${TRIAL} run_trial
-    sleep 30
+    sleep 310
     kill_processes
 done
