@@ -22,9 +22,10 @@ function run_trial {
 
 trap kill_processes SIGINT
 
+
 for TRIAL in {1..10}; do
     echo "==========================================================="
-    echo "================ Running trial ${TRIAL}... ================"
+    echo " Running trial ${TRIAL}... "
     echo "==========================================================="
 
     TRIAL=${TRIAL} run_trial
