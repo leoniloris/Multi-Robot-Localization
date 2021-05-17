@@ -29,6 +29,6 @@ for TRIAL in {1..10}; do
     echo "==========================================================="
 
     TRIAL=${TRIAL} run_trial
-    sleep 310
+    sleep 420
     kill_processes
 done

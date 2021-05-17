@@ -122,7 +122,10 @@ bool Robot::has_detected(double x, double y, Detection& detection) {
 
     detection.distance = robots_distance;
     detection.angle = atan(dy / (dx + EPS));
-    return (robots_distance < meters_to_cells(DETECTION_THRESHOLD_METERS)) && is_path_free;
+
+    const bool probably_detected = GAUSSIAN_LIKELIHOOD(0, meters_to_cells(DETECTION_THRESHOLD_METERS), robots_distance) >
+                                   (double)rand() / RAND_MAX;
+    return probably_detected && is_path_free;
 }
 
 geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geometry_msgs::Quaternion orientation) {
