@@ -238,7 +238,7 @@ void ParticleFilter::update_weights_based_on_detection(const vector<Particle> ot
 
 static vector<vector<double>> saved_locations;
 
-void ParticleFilter::save_state(uint16_t robot_id, double robot_x, double robot_y, double robot_angle) {
+void ParticleFilter::save_state(uint16_t robot_id, double robot_x, double robot_y, double robot_angle, double has_detection) {
     static uint32_t new_rows_counter = 0;
 
     // append robot location and clusters locations to saved_locations
@@ -250,6 +250,8 @@ void ParticleFilter::save_state(uint16_t robot_id, double robot_x, double robot_
         locations.push_back(cluster.angle);
         locations.push_back(cluster.weight);
     }
+
+    locations.push_back(has_detection);
 
     saved_locations.push_back(locations);
 
