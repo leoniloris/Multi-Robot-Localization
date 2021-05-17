@@ -69,7 +69,7 @@ class MapServer:
             self._update_plot()
 
     def _handle_message(self, message):
-        print(f"handling robot {message.robot_index} messages.")
+        print(f"handling robot {message.robot_index} messages. {len(self._axis.patches)} pending patches to clear in plot.")
         self._remove_old_particles_from_robot(message.robot_index)
         self._create_new_particles(message.particles, message.robot_index)
 
@@ -86,7 +86,6 @@ class MapServer:
 
         for entry_to_remove in entries_to_remove:
             del self._particles_patches[entry_to_remove]
-        print(len(self._axis.patches))
 
     def _create_new_particles(self, particles_msg, robot_index):
         for particle_idx, p in enumerate(particles_msg):
@@ -122,7 +121,6 @@ class MapServer:
             return [patches.Rectangle((x_grid, y_grid), (8/15), measurement, angle=(-angle*180/np.pi - measurement_angle), color=color, alpha=0.3)
                     for (measurement, measurement_angle) in zip(measurements, MEASUREMENT_ANGLES)]
         elif ParticleType(particle_type) == ParticleType.CLUSTER:
-            print(x_grid, y_grid)
             return [patches.Circle((x_grid, y_grid), weight*4 , alpha=0.5, color=color)]
         else:
             raise Exception("Invalid particle type")

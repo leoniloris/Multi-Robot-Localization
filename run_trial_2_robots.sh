@@ -2,6 +2,8 @@
 set -e
 
 function kill_processes {
+    echo "Stopping processes..."
+    sleep 2
     pkill -f robot_node
     pkill -f wall_following
     pkill -f gazebo
@@ -10,7 +12,6 @@ function kill_processes {
 }
 
 function run_trial {
-    sleep 4
     roslaunch -v multi_robot_localization main.launch n_robots:=2 &
     sleep 4
 
@@ -22,13 +23,14 @@ function run_trial {
 
 trap kill_processes SIGINT
 
-
 for TRIAL in {1..10}; do
     echo "==========================================================="
     echo " Running trial ${TRIAL}... "
     echo "==========================================================="
 
     TRIAL=${TRIAL} run_trial
+
     sleep 420
     kill_processes
+    sleep 4
 done
