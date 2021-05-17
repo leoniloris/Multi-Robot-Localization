@@ -18,6 +18,8 @@
 #define LASER_MAX_RANGE_METERS 3
 #define DETECTION_THRESHOLD_METERS 1.5
 
+#define UNITIALIZED DBL_MAX
+
 enum ParticleType {
     ROBOT,
     PARTICLE,
@@ -50,8 +52,8 @@ class Robot {
     ros::Publisher broadcaster;
     ros::Publisher infos_to_detector;
 
-    geometry_msgs::Pose2D* previous_pose_2d = nullptr;  // Not to be used, just for the robot simulation
-    double current_angle;                               // Not to be used, just for the robot simulation
+    geometry_msgs::Pose2D previous_pose_2d;  // Not to be used, just for the robot simulation
+    double current_angle;                    // Not to be used, just for the robot simulation
     std::vector<uint16_t> measurement_angles_degrees{0, 45, 90, 135, 180, 225, 270, 315};
     std::vector<double> robot_measurements{0, 0, 0, 0, 0, 0, 0, 0};
     std::unordered_map<uint16_t, Detection> robot_detections;

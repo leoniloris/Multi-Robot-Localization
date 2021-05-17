@@ -30,9 +30,9 @@ void Robot::laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_meters) 
     broadcast_particles();
     particle_filter->resample_particles();
 
-    if (previous_pose_2d != nullptr) {
+    if (previous_pose_2d.x != UNITIALIZED) {
         double has_detection = (robot_detections.empty() ? 0.0 : 1.0);
-        particle_filter->save_state(robot_index, previous_pose_2d->x, previous_pose_2d->y, previous_pose_2d->theta, has_detection);
+        particle_filter->save_state(robot_index, previous_pose_2d.x, previous_pose_2d.y, previous_pose_2d.theta, has_detection);
     }
 }
 
@@ -48,7 +48,7 @@ void Robot::update_particle_filter_based_on_detections() {
 void Robot::update_measurements(const sensor_msgs::LaserScan::ConstPtr& scan_meters) {
     static const double laser_max_range = meters_to_cells(LASER_MAX_RANGE_METERS);
 
-    if (previous_pose_2d != nullptr) {
+    if (previous_pose_2d.x != UNITIALIZED) {
         for (uint16_t measurement_idx = 0; measurement_idx < robot_measurements.size(); measurement_idx++) {
             const uint16_t measurement_angle_degrees = measurement_angles_degrees[measurement_idx];
             const double distance = meters_to_cells(scan_meters->ranges[measurement_angle_degrees]);
@@ -61,8 +61,8 @@ void Robot::publush_clusters() {
     const vector<Particle>* clusters = kmeans_get_clusters();
     multi_robot_localization::clusters clusters_to_publish;
     clusters_to_publish.origin_robot_index = robot_index;
-    clusters_to_publish.origin_robot_x = previous_pose_2d->x;
-    clusters_to_publish.origin_robot_y = previous_pose_2d->y;
+    clusters_to_publish.origin_robot_x = previous_pose_2d.x;
+    clusters_to_publish.origin_robot_y = previous_pose_2d.y;
     clusters_to_publish.origin_robot_angle = current_angle;
     for (auto cluster : (*clusters)) {
         multi_robot_localization::particle cluster_to_publish;
@@ -115,9 +115,9 @@ void Robot::detector_callback(const multi_robot_localization::clusters::ConstPtr
 }
 
 bool Robot::has_detected(double x, double y, Detection& detection) {
-    const bool is_path_free = particle_filter->is_path_free(previous_pose_2d->x, previous_pose_2d->y, x, y);
-    const double dx = (previous_pose_2d->x - x);
-    const double dy = (previous_pose_2d->y - y);
+    const bool is_path_free = particle_filter->is_path_free(previous_pose_2d.x, previous_pose_2d.y, x, y);
+    const double dx = (previous_pose_2d.x - x);
+    const double dy = (previous_pose_2d.y - y);
     const double robots_distance = L2_DISTANCE(dx, dy);
 
     detection.distance = robots_distance;
@@ -137,15 +137,17 @@ geometry_msgs::Pose2D Robot::compute_delta_pose(geometry_msgs::Point point, geom
     current_pose_2d.y = point.y;
     current_pose_2d.theta = current_angle;
 
-    if (previous_pose_2d == nullptr) {
-        previous_pose_2d = new geometry_msgs::Pose2D(current_pose_2d);
+    if (previous_pose_2d.x == UNITIALIZED) {
+        previous_pose_2d.x = current_pose_2d.x;
+        previous_pose_2d.y = current_pose_2d.y;
+        previous_pose_2d.theta = current_pose_2d.theta;
     }
 
-    delta_pose_2d.x = current_pose_2d.x - previous_pose_2d->x;
-    delta_pose_2d.y = current_pose_2d.y - previous_pose_2d->y;
-    delta_pose_2d.theta = current_pose_2d.theta - previous_pose_2d->theta;
+    delta_pose_2d.x = current_pose_2d.x - previous_pose_2d.x;
+    delta_pose_2d.y = current_pose_2d.y - previous_pose_2d.y;
+    delta_pose_2d.theta = current_pose_2d.theta - previous_pose_2d.theta;
 
-    *previous_pose_2d = current_pose_2d;
+    previous_pose_2d = current_pose_2d;
     return delta_pose_2d;
 }
 
@@ -166,6 +168,9 @@ Robot::Robot(uint8_t robot_index, int argc, char** argv) {
     ros::NodeHandle node_handle;
 
     particle_filter = new ParticleFilter(measurement_angles_degrees);
+    previous_pose_2d.x = UNITIALIZED;
+    previous_pose_2d.y = UNITIALIZED;
+    previous_pose_2d.theta = UNITIALIZED;
 
     std::string laser_topic = "/ugv" + robot_suffix + "/scan";
     std::string odometry_topic = "/ugv" + robot_suffix + "/odom";
@@ -196,8 +201,8 @@ void Robot::broadcast_particles() {
 
 multi_robot_localization::particle Robot::get_robot_particle_to_publish() {
     multi_robot_localization::particle robot_particle;
-    robot_particle.x = previous_pose_2d->x;
-    robot_particle.y = previous_pose_2d->y;
+    robot_particle.x = previous_pose_2d.x;
+    robot_particle.y = previous_pose_2d.y;
     robot_particle.angle = current_angle;
     robot_particle.type = ROBOT;
     //// Robot does not need to set weight for now
@@ -210,5 +215,4 @@ multi_robot_localization::particle Robot::get_robot_particle_to_publish() {
 
 Robot::~Robot() {
     delete particle_filter;
-    delete previous_pose_2d;
 }
