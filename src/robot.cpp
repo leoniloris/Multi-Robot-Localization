@@ -123,8 +123,9 @@ bool Robot::has_detected(double x, double y, Detection& detection) {
     detection.distance = robots_distance;
     detection.angle = atan(dy / (dx + EPS));
 
-    const bool probably_detected = GAUSSIAN_LIKELIHOOD(0, meters_to_cells(DETECTION_THRESHOLD_METERS), robots_distance) >
-                                   (double)rand() / RAND_MAX;
+    const double random_percentage = (double)rand() / RAND_MAX;
+    const double distance_likelihood = GAUSSIAN_LIKELIHOOD(0, meters_to_cells(DETECTION_THRESHOLD_METERS), robots_distance);
+    const bool probably_detected = distance_likelihood > random_percentage;
     return probably_detected && is_path_free;
 }
 
