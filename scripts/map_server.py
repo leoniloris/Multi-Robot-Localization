@@ -19,10 +19,6 @@ colors = ["", "red", "cyan", "blue"]
 with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/robot.h", mode='r') as robot_h:
     MEASUREMENT_ANGLES = list(map(lambda angle: int(angle), re.findall(
         " measurement_angles_degrees\{(.*?)\}", robot_h.read())[0].split(',')))
-with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/occupancy_grid.h", mode='r') as occupancy_grid:
-    text = occupancy_grid.read()
-    X_CENTER = float(re.findall(r'X_CENTER \((.*?)\)', text)[0])
-    Y_CENTER = float(re.findall(r'Y_CENTER \((.*?)\)', text)[0])
 
 
 class ParticleType(Enum):
