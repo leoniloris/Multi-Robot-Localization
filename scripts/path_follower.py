@@ -9,6 +9,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from tf import transformations
 from itertools import cycle
+import path_planer
 
 
 @dataclass
@@ -30,8 +31,9 @@ path_landmarks = [
     Landmark(*l) for l in [(10, 20), (25, 20), (25, 62), (115, 62), (115, 105), (130, 105)]
 ]
 
-with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/occupancy_grid.h", mode='r') as occupancy_grid:
-    text = occupancy_grid.read()
+
+with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/occupancy_grid.h", mode='r') as occupancy_grid_file:
+    text = occupancy_grid_file.read()
     X_CENTER = float(re.findall(r'X_CENTER \((.*?)\)', text)[0])
     Y_CENTER = float(re.findall(r'Y_CENTER \((.*?)\)', text)[0])
     CELLS_PER_METER = float(re.findall(r'CELLS_PER_METER \((.*?)\)', text)[0])
@@ -68,9 +70,9 @@ def control_angle(angle_error):
     else:
         err = (2*np.pi - angle_error)
 
-    ## integral error just messes things up
+    # integral error just messes things up
     # integral_err += err
-    return (3 / np.pi) * err# + 0.006*integral_err
+    return (3 / np.pi) * err  # + 0.006*integral_err
 
 
 def control_position(position_error, angle_error):
@@ -90,11 +92,20 @@ def clear_past_targets(x, y):
             path_landmark.checked = True
 
 
+def get_crammed_occupancy_grid():
+    from scipy.ndimage import convolve
+    occupancy_grid =\
+        np.loadtxt(os.environ["HOME"] +
+                   "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv", delimiter=",")
+    cramming_kernel = np.ones((5, 5))
+    return np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
+
+
 def main():
     import sys
     robot_suffix = sys.argv[1]
-    global actuator
-
+    global actuator, crammed_occupancy_grid
+    crammed_occupancy_grid = get_crammed_occupancy_grid()
     rospy.init_node(f'path_follower_{robot_suffix}')
     odometry_topic = '/ugv' + str(robot_suffix) + '/odom'
     vel_topic = '/ugv' + str(robot_suffix) + '/cmd_vel'
