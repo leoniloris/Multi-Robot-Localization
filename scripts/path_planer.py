@@ -21,6 +21,9 @@ class Cell:
     def __eq__(self, other):
         return self.position == other.position
 
+    def __contains__(self, other):
+        return self.position == other.position
+
     def hit_the_wall(self, occupancy_grid):
         return occupancy_grid[self.position[0], self.position[1]] != 0
 
@@ -76,6 +79,8 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
     cells_yet_to_visit = [start_cell]
     visited_cells = []
 
+    # global saving_stuff
+    # saving_stuff = []
     while len(cells_yet_to_visit) > 0:
         cell_with_smallest_cost = min(cells_yet_to_visit, key=lambda c: c.cost)
         cells_yet_to_visit.remove(cell_with_smallest_cost)
@@ -86,42 +91,40 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
             return trace_back_path_with_smallest_cost(cell_with_smallest_cost)
 
         for adjacent_cell in get_adjacent_cells(cell_with_smallest_cost, occupancy_grid, heuristic):
-            adjacent_cell.distance_from_begining = cell_with_smallest_cost.distance_from_begining + 1
-            adjacent_cell.cost = adjacent_cell.distance_from_begining + \
-                heuristic[adjacent_cell.position[0], adjacent_cell.position[1]]
-            print(adjacent_cell.distance_from_begining, adjacent_cell.cost)
+            if adjacent_cell in visited_cells:
+                continue
 
             for visited_cell in visited_cells:
                 if adjacent_cell == visited_cell:
-                    continue
-
-            for open_cell in cells_yet_to_visit:
-                if adjacent_cell == open_cell and adjacent_cell.distance_from_begining > open_cell.distance_from_begining:
-                    continue
-
-            cells_yet_to_visit.append(adjacent_cell)
-
-
-def test():
-    occupancy_grid = np.asarray([[0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
-
-    start = (0, 0)
-    end = (7, 6)
-
-    path = a_star(occupancy_grid, start, end)
-    assert [(0, 0), (1, 1), (2, 2), (3, 3), (4, 3),
-            (5, 4), (6, 5), (7, 6)] == path
-    print(path)
+                    break
+            else:
+                for cell_to_visit in cells_yet_to_visit:
+                    if adjacent_cell == cell_to_visit and adjacent_cell.distance_from_begining >= cell_to_visit.distance_from_begining:
+                        break
+                else:
+                    cells_yet_to_visit.append(adjacent_cell)
+                    # saving_stuff.append(adjacent_cell.position)
 
 
 if __name__ == '__main__':
-    test()
+    import os
+    from scipy.ndimage import convolve
+    occupancy_grid = np.loadtxt(os.environ["HOME"] +
+                                "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv", delimiter=",")
+    cramming_kernel = np.ones((5, 5))
+    occupancy_grid = np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
+
+    try:
+        import time
+        a = time.time()
+        a_star(occupancy_grid, (130, 90), (10, 100))
+        print((time.time()-a))
+    except KeyboardInterrupt as e:
+        print(e)
+
+    # x, y = list(zip(*saving_stuff))
+    # import seaborn as sns
+    # import matplotlib.pyplot as plt
+    # sns.heatmap(occupancy_grid)
+    # plt.scatter(y, x, alpha=0.3)
+    # plt.show()

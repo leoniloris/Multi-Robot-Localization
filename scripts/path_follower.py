@@ -1,4 +1,5 @@
 import numpy as np
+import path_planer
 import rospy
 import os
 import re
@@ -9,7 +10,6 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from tf import transformations
 from itertools import cycle
-import path_planer
 
 
 @dataclass
@@ -94,8 +94,7 @@ def clear_past_targets(x, y):
 
 def get_crammed_occupancy_grid():
     from scipy.ndimage import convolve
-    occupancy_grid =\
-        np.loadtxt(os.environ["HOME"] +
+    occupancy_grid = np.loadtxt(os.environ["HOME"] +
                    "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv", delimiter=",")
     cramming_kernel = np.ones((5, 5))
     return np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
