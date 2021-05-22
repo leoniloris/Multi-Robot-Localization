@@ -76,7 +76,7 @@ def create_heuristic_matrix(end_point: Tuple[int, int], occupancy_grid):
     # h = convolve(occupancy_grid, np.ones((15, 15)))
     h = np.zeros(occupancy_grid.shape, dtype=int)
     for (row, col) in np.asarray(np.meshgrid(range(occupancy_grid.shape[0]), range(occupancy_grid.shape[1]))).T.reshape(-1, 2):
-        h[row, col] += (abs(row-end_point[0]) + abs(col-end_point[1]))
+        h[row, col] = np.sqrt((row-end_point[0])**2 + (col-end_point[1])**2)
     return h
 
 
