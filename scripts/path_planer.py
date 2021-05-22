@@ -3,16 +3,16 @@ from typing import Tuple
 import numpy as np
 
 
-# ADJACENT_CELL_DISPLACEMENTS = [
-#     (-1, -1), (0, -1), (1, -1),
-#     (-1,  0),          (1,  0),
-#     (-1,  1), (0,  1), (1,  1),
-# ]
 ADJACENT_CELL_DISPLACEMENTS = [
-             (0, -1),
-    (-1,  0),         (1,  0),
-             (0,  1),
+    (-1, -1), (0, -1), (1, -1),
+    (-1,  0),          (1,  0),
+    (-1,  1), (0,  1), (1,  1),
 ]
+# ADJACENT_CELL_DISPLACEMENTS = [
+#              (0, -1),
+#     (-1,  0),         (1,  0),
+#              (0,  1),
+# ]
 
 
 @dataclass
@@ -72,7 +72,7 @@ def get_adjacent_cells(parent_cell, occupancy_grid, heuristic):
 def create_heuristic_matrix(end_point: Tuple[int, int], shape: Tuple[int, int]):
     h = np.zeros(shape, dtype=int)
     for (row, col) in np.asarray(np.meshgrid(range(shape[0]), range(shape[1]))).T.reshape(-1, 2):
-        h[row, col] = np.sqrt((row-end_point[0])**2 + (col-end_point[1])**2)
+        h[row, col] = abs(row-end_point[0]) + abs(col-end_point[1])
     return h
 
 
@@ -85,8 +85,8 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
     visited_cells = []
 
     ## TO DEBUG
-    # global saving_stuff
-    # saving_stuff = []
+    global saving_stuff
+    saving_stuff = []
     while len(cells_yet_to_visit) > 0:
         cell_with_smallest_cost = min(cells_yet_to_visit, key=lambda c: c.cost)
         cells_yet_to_visit.remove(cell_with_smallest_cost)
@@ -110,7 +110,7 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
                 else:
                     cells_yet_to_visit.append(adjacent_cell)
                     ## TO DEBUG
-                    # saving_stuff.append(adjacent_cell.position)
+                    saving_stuff.append(adjacent_cell.position)
 
 
 if __name__ == '__main__':
@@ -124,15 +124,17 @@ if __name__ == '__main__':
     try:
         import time
         a = time.time()
-        a_star(occupancy_grid, (130, 90), (10, 100))
+        path = a_star(occupancy_grid, (130, 90), (10, 100))
         print((time.time()-a))
     except KeyboardInterrupt as e:
         print(e)
 
     ## TO DEBUG
-    # x, y = list(zip(*saving_stuff))
-    # import seaborn as sns
-    # import matplotlib.pyplot as plt
-    # sns.heatmap(occupancy_grid)
-    # plt.scatter(y, x, alpha=0.3)
-    # plt.show()
+    x, y = list(zip(*saving_stuff))
+    path_x, path_y = list(zip(*path))
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    sns.heatmap(occupancy_grid)
+    plt.scatter(y, x, alpha=0.3)
+    plt.scatter(path_y, path_x, alpha=1)
+    plt.show()
