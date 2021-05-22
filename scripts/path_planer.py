@@ -3,10 +3,15 @@ from typing import Tuple
 import numpy as np
 
 
+# ADJACENT_CELL_DISPLACEMENTS = [
+#     (-1, -1), (0, -1), (1, -1),
+#     (-1,  0),          (1,  0),
+#     (-1,  1), (0,  1), (1,  1),
+# ]
 ADJACENT_CELL_DISPLACEMENTS = [
-    (-1, -1), (0, -1), (1, -1),
-    (-1,  0),          (1,  0),
-    (-1,  1), (0,  1), (1,  1),
+             (0, -1),
+    (-1,  0),         (1,  0),
+             (0,  1),
 ]
 
 
@@ -67,7 +72,7 @@ def get_adjacent_cells(parent_cell, occupancy_grid, heuristic):
 def create_heuristic_matrix(end_point: Tuple[int, int], shape: Tuple[int, int]):
     h = np.zeros(shape, dtype=int)
     for (row, col) in np.asarray(np.meshgrid(range(shape[0]), range(shape[1]))).T.reshape(-1, 2):
-        h[row, col] = (row-end_point[0])**2 + (col-end_point[1])**2
+        h[row, col] = np.sqrt((row-end_point[0])**2 + (col-end_point[1])**2)
     return h
 
 
@@ -79,6 +84,7 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
     cells_yet_to_visit = [start_cell]
     visited_cells = []
 
+    ## TO DEBUG
     # global saving_stuff
     # saving_stuff = []
     while len(cells_yet_to_visit) > 0:
@@ -103,6 +109,7 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
                         break
                 else:
                     cells_yet_to_visit.append(adjacent_cell)
+                    ## TO DEBUG
                     # saving_stuff.append(adjacent_cell.position)
 
 
@@ -122,6 +129,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt as e:
         print(e)
 
+    ## TO DEBUG
     # x, y = list(zip(*saving_stuff))
     # import seaborn as sns
     # import matplotlib.pyplot as plt
