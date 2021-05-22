@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
+from scipy.ndimage import convolve
 from typing import Tuple
-import numpy as np
 
+import numpy as np
+import os
 
 ADJACENT_CELL_DISPLACEMENTS = [
     (-1, -1), (0, -1), (1, -1),
@@ -13,6 +15,7 @@ ADJACENT_CELL_DISPLACEMENTS = [
 #     (-1,  0),         (1,  0),
 #              (0,  1),
 # ]
+
 
 
 @dataclass
@@ -69,22 +72,23 @@ def get_adjacent_cells(parent_cell, occupancy_grid, heuristic):
     return adjacent_cells
 
 
-def create_heuristic_matrix(end_point: Tuple[int, int], shape: Tuple[int, int]):
-    h = np.zeros(shape, dtype=int)
-    for (row, col) in np.asarray(np.meshgrid(range(shape[0]), range(shape[1]))).T.reshape(-1, 2):
-        h[row, col] = abs(row-end_point[0]) + abs(col-end_point[1])
+def create_heuristic_matrix(end_point: Tuple[int, int], occupancy_grid):
+    # h = convolve(occupancy_grid, np.ones((15, 15)))
+    h = np.zeros(occupancy_grid.shape, dtype=int)
+    for (row, col) in np.asarray(np.meshgrid(range(occupancy_grid.shape[0]), range(occupancy_grid.shape[1]))).T.reshape(-1, 2):
+        h[row, col] += (abs(row-end_point[0]) + abs(col-end_point[1]))
     return h
 
 
 def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
-    heuristic = create_heuristic_matrix(end, occupancy_grid.shape)
+    heuristic = create_heuristic_matrix(end, occupancy_grid)
     start_cell = Cell(None, start)
     end_cell = Cell(None, end)
 
     cells_yet_to_visit = [start_cell]
     visited_cells = []
 
-    ## TO DEBUG
+    # TO DEBUG
     global saving_stuff
     saving_stuff = []
     while len(cells_yet_to_visit) > 0:
@@ -109,16 +113,13 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
                         break
                 else:
                     cells_yet_to_visit.append(adjacent_cell)
-                    ## TO DEBUG
+                    # TO DEBUG
                     saving_stuff.append(adjacent_cell.position)
 
 
 if __name__ == '__main__':
-    import os
-    from scipy.ndimage import convolve
-    occupancy_grid = np.loadtxt(os.environ["HOME"] +
-                                "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv", delimiter=",")
     cramming_kernel = np.ones((5, 5))
+    occupancy_grid = np.loadtxt(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv", delimiter=",")
     occupancy_grid = np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
 
     try:
@@ -129,7 +130,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt as e:
         print(e)
 
-    ## TO DEBUG
+    # TO DEBUG
     x, y = list(zip(*saving_stuff))
     path_x, path_y = list(zip(*path))
     import seaborn as sns
