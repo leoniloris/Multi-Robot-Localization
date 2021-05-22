@@ -27,9 +27,9 @@ actuator = None
 control_msg = Twist()
 
 current_target_idx = 0
-path_landmarks = [
-    Landmark(*l) for l in [(10, 20), (25, 20), (25, 62), (115, 62), (115, 105), (130, 105)]
-]
+# path_landmarks = [
+#     Landmark(*l) for l in [(10, 20), (25, 20), (25, 62), (115, 62), (115, 105), (130, 105)]
+# ]
 
 
 with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/occupancy_grid.h", mode='r') as occupancy_grid_file:
@@ -108,7 +108,14 @@ def main():
     rospy.init_node(f'path_follower_{robot_suffix}')
     odometry_topic = '/ugv' + str(robot_suffix) + '/odom'
     vel_topic = '/ugv' + str(robot_suffix) + '/cmd_vel'
-    print(vel_topic)
+
+    if robot_suffix == '1':
+        path_tuples = path_planer.a_star(crammed_occupancy_grid, (10, 30), (130, 90))
+    elif robot_suffix == '2':
+        path_tuples = path_planer.a_star(crammed_occupancy_grid, (130, 90), (10, 70))
+
+    global path_landmarks
+    path_landmarks = [Landmark(*l) for l in path_tuples]
 
     actuator = rospy.Publisher(vel_topic, Twist, queue_size=1)
     sub = rospy.Subscriber(odometry_topic, Odometry, clbk_odometry)
