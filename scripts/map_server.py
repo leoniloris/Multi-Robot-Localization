@@ -43,12 +43,11 @@ class MapServer:
         )
 
     def _setup_map_plot(self):
+        import re
+        occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', open(f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp", mode='r').read())[0]
         self._occupancy_grid = np.loadtxt(
-            os.environ["HOME"] +
-            "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv",
-            # "/catkin_ws/src/multi_robot_localization/occupancy_grid/cross_small.csv",
-            delimiter=",",
-        )
+            f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}",
+            delimiter=",")
 
         fig = plt.figure()
         self._axis = fig.add_subplot(1, 1, 1)

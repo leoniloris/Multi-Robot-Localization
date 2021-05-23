@@ -87,9 +87,9 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
     cells_yet_to_visit = [start_cell]
     visited_cells = []
 
-    # TO DEBUG
-    global saving_stuff
-    saving_stuff = []
+    # # TO DEBUG
+    # global saving_stuff
+    # saving_stuff = []
     while len(cells_yet_to_visit) > 0:
         cell_with_smallest_cost = min(cells_yet_to_visit, key=lambda c: c.cost)
         cells_yet_to_visit.remove(cell_with_smallest_cost)
@@ -112,30 +112,33 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
                         break
                 else:
                     cells_yet_to_visit.append(adjacent_cell)
-                    # TO DEBUG
-                    saving_stuff.append(adjacent_cell.position)
+                    # # TO DEBUG
+                    # saving_stuff.append(adjacent_cell.position)
 
 
-if __name__ == '__main__':
-    cramming_kernel = np.ones((5, 5))
-    occupancy_grid = np.loadtxt(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv", delimiter=",")
-    occupancy_grid = np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
+def test():
+    import re
+    text = open(f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp", mode='r').read()
+    occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', text)[0]
+    occupancy_grid = np.loadtxt(f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}", delimiter=",")
 
     try:
         import time
         a = time.time()
         path = a_star(occupancy_grid, (130, 90), (10, 100))
-        # path = a_star(occupancy_grid, (130, 90), (10, 20))
         print((time.time()-a))
     except KeyboardInterrupt as e:
         print(e)
 
-    # TO DEBUG
-    x, y = list(zip(*saving_stuff))
-    path_x, path_y = list(zip(*path))
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    sns.heatmap(occupancy_grid)
-    plt.scatter(y, x, alpha=0.3)
-    plt.scatter(path_y, path_x, alpha=1)
-    plt.show()
+    # # TO DEBUG
+    # x, y = list(zip(*saving_stuff))
+    # path_x, path_y = list(zip(*path))
+    # import seaborn as sns
+    # import matplotlib.pyplot as plt
+    # sns.heatmap(occupancy_grid)
+    # plt.scatter(y, x, alpha=0.3)
+    # plt.scatter(path_y, path_x, alpha=1)
+    # plt.show()
+
+if __name__ == '__main__':
+    test()

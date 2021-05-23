@@ -28,10 +28,6 @@ actuator = None
 control_msg = Twist()
 
 current_target_idx = 0
-# path_landmarks = [
-#     Landmark(*l) for l in [(10, 20), (25, 20), (25, 62), (115, 62), (115, 105), (130, 105)]
-# ]
-
 
 with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/occupancy_grid.h", mode='r') as occupancy_grid_file:
     text = occupancy_grid_file.read()
@@ -92,8 +88,11 @@ def clear_past_targets(x, y):
 
 def get_crammed_occupancy_grid(min_wall_distance):
     from scipy.ndimage import convolve
-    occupancy_grid = np.loadtxt(os.environ["HOME"] +
-                                "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv", delimiter=",")
+    import re
+    occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', open(f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp", mode='r').read())[0]
+    occupancy_grid = np.loadtxt(
+        f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}",
+        delimiter=",")
     cramming_kernel = np.ones((min_wall_distance*2, min_wall_distance*2))
     return np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
 
