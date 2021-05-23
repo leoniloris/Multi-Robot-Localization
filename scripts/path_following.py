@@ -1,5 +1,5 @@
 import numpy as np
-import path_planer
+import path_planner
 import rospy
 import sys
 import os
@@ -100,7 +100,7 @@ def main():
     rospy.init_node(f'path_following_{robot_suffix}')
     print(f'min_wall_distance={min_wall_distance}, start={(x1, y1)}, end={(x2, y2)}')
     map_bigger_walls = get_crammed_occupancy_grid(min_wall_distance)
-    path_landmarks = [Landmark(*l) for l in path_planer.a_star(map_bigger_walls, (x1, y1), (x2, y2))]
+    path_landmarks = [Landmark(*l) for l in path_planner.a_star(map_bigger_walls, (x1, y1), (x2, y2))]
 
     path_follower = PathFollower(path_landmarks)
     actuator = rospy.Publisher('/ugv' + str(robot_suffix) + '/cmd_vel', Twist, queue_size=1)
