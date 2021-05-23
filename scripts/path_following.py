@@ -105,7 +105,7 @@ def main():
     robot_suffix = sys.argv[1]
     global actuator, crammed_occupancy_grid
     crammed_occupancy_grid = get_crammed_occupancy_grid()
-    rospy.init_node(f'path_follower_{robot_suffix}')
+    rospy.init_node(f'path_following_{robot_suffix}')
     odometry_topic = '/ugv' + str(robot_suffix) + '/odom'
     vel_topic = '/ugv' + str(robot_suffix) + '/cmd_vel'
 
