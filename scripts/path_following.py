@@ -61,7 +61,6 @@ def clbk_odometry(msg):
     clear_past_targets(x, y)
 
 
-# integral_err = 0
 def control_angle(angle_error):
     global integral_err
     angle_error = np.fmod(angle_error+4*np.pi, 2*np.pi)
@@ -71,9 +70,7 @@ def control_angle(angle_error):
     else:
         err = (2*np.pi - angle_error)
 
-    # integral error just messes things up
-    # integral_err += err
-    return (3 / np.pi) * err  # + 0.006*integral_err
+    return (3 / np.pi) * err
 
 
 def control_position(position_error, angle_error):
@@ -104,8 +101,10 @@ def get_crammed_occupancy_grid(min_wall_distance):
 def main():
     global actuator, map_bigger_walls, path_landmarks
     robot_suffix = sys.argv[1]
-    min_wall_distance, x1, y1, x2, y2 = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6])
-    print(f"Running path follower with params min_wall_distance={min_wall_distance}, start={(x1,y1)}, end={(x2,y2)}")
+    min_wall_distance, x1, y1, x2, y2 = int(sys.argv[2]), int(
+        sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6])
+    print(f"Running path follower
+          with params min_wall_distance={min_wall_distance}, start={(x1, y1)}, end={(x2, y2)}")
     map_bigger_walls = get_crammed_occupancy_grid(min_wall_distance)
 
     rospy.init_node(f'path_following_{robot_suffix}')
@@ -113,7 +112,6 @@ def main():
     vel_topic = '/ugv' + str(robot_suffix) + '/cmd_vel'
 
     path_tuples = path_planer.a_star(map_bigger_walls, (x1, y1), (x2, y2))
-
     path_landmarks = [Landmark(*l) for l in path_tuples]
     actuator = rospy.Publisher(vel_topic, Twist, queue_size=1)
     sub = rospy.Subscriber(odometry_topic, Odometry, clbk_odometry)

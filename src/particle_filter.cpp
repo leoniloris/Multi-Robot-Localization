@@ -63,7 +63,7 @@ ParticleFilter::ParticleFilter(vector<uint16_t>& angles_degrees)
     for (uint16_t particle_idx = 0; particle_idx < N_PARTICLES; particle_idx++) {
         Particle p = create_particle(occupancy_grid->height_cells(), occupancy_grid->width_cells(), measurement_angles_degrees.size());
         particles[particle_idx] = p;
-        ROS_INFO_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle);
+        ROS_DEBUG_STREAM("creating particle: x: " << p.x << " y: " << p.y << " angle: " << p.angle);
     }
 
     encoded_particles.particles.clear();
