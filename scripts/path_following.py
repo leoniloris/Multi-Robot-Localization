@@ -104,7 +104,7 @@ def get_crammed_occupancy_grid(min_wall_distance):
 def main():
     global actuator, map_bigger_walls, path_landmarks
     robot_suffix = sys.argv[1]
-    min_wall_distance, x1, y1, x2, y2 = sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
+    min_wall_distance, x1, y1, x2, y2 = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6])
     print(f"Running path follower with params min_wall_distance={min_wall_distance}, start={(x1,y1)}, end={(x2,y2)}")
     map_bigger_walls = get_crammed_occupancy_grid(min_wall_distance)
 
