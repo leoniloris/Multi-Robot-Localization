@@ -89,9 +89,11 @@ def clear_past_targets(x, y):
 def get_crammed_occupancy_grid(min_wall_distance):
     from scipy.ndimage import convolve
     import re
-    occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', open(f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp", mode='r').read())[0]
+    text = open(
+        f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp', mode='r').read()
+    occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', text)[0]
     occupancy_grid = np.loadtxt(
-        f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}",
+        f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}',
         delimiter=",")
     cramming_kernel = np.ones((min_wall_distance*2, min_wall_distance*2))
     return np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
@@ -102,8 +104,7 @@ def main():
     robot_suffix = sys.argv[1]
     min_wall_distance, x1, y1, x2, y2 = int(sys.argv[2]), int(
         sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6])
-    print(f"Running path follower
-          with params min_wall_distance={min_wall_distance}, start={(x1, y1)}, end={(x2, y2)}")
+    print(f'Running path follower with params min_wall_distance={min_wall_distance}, start={(x1, y1)}, end={(x2, y2)}')
     map_bigger_walls = get_crammed_occupancy_grid(min_wall_distance)
 
     rospy.init_node(f'path_following_{robot_suffix}')

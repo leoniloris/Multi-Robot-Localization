@@ -44,9 +44,10 @@ class MapServer:
 
     def _setup_map_plot(self):
         import re
-        occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', open(f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp", mode='r').read())[0]
+        text = open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp', mode='r').read()
+        occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', text)[0]
         self._occupancy_grid = np.loadtxt(
-            f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}",
+            f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}',
             delimiter=",")
 
         fig = plt.figure()

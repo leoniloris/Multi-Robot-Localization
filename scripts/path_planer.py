@@ -118,9 +118,9 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
 
 def test():
     import re
-    text = open(f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp", mode='r').read()
+    text = open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp', mode='r').read()
     occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', text)[0]
-    occupancy_grid = np.loadtxt(f"{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}", delimiter=",")
+    occupancy_grid = np.loadtxt(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}', delimiter=",")
 
     try:
         import time
