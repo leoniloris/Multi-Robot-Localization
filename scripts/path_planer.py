@@ -73,23 +73,10 @@ def get_adjacent_cells(parent_cell, occupancy_grid, heuristic):
 
 
 def create_heuristic_matrix(end_point: Tuple[int, int], occupancy_grid):
-    from scipy.ndimage import gaussian_filter
-    h = gaussian_filter(occupancy_grid, sigma=5)
-    h2 = np.zeros(occupancy_grid.shape, dtype=int)
+    h = np.zeros(occupancy_grid.shape, dtype=int)
     for (row, col) in np.asarray(np.meshgrid(range(occupancy_grid.shape[0]), range(occupancy_grid.shape[1]))).T.reshape(-1, 2):
-        h2[row, col] = np.sqrt((row-end_point[0])**2 + (col-end_point[1])**2)
-    h *= (h2.max() / h.max())
-    h = (0.7*h + 0.3*h2)
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    plt.figure()
-    sns.heatmap(h)
-    plt.pause(1)
-    plt.figure()
-
+        h[row, col] = np.sqrt((row-end_point[0])**2 + (col-end_point[1])**2)
     return h
-
-
 
 
 def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
