@@ -1,6 +1,7 @@
 import numpy as np
 import path_planer
 import rospy
+import sys
 import os
 import re
 
@@ -92,31 +93,28 @@ def clear_past_targets(x, y):
             path_landmark.checked = True
 
 
-def get_crammed_occupancy_grid():
+def get_crammed_occupancy_grid(min_wall_distance):
     from scipy.ndimage import convolve
     occupancy_grid = np.loadtxt(os.environ["HOME"] +
-                   "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv", delimiter=",")
-    cramming_kernel = np.ones((5, 5))
+                                "/catkin_ws/src/multi_robot_localization/occupancy_grid/rooms_small.csv", delimiter=",")
+    cramming_kernel = np.ones((min_wall_distance*2, min_wall_distance*2))
     return np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
 
 
 def main():
-    import sys
+    global actuator, map_bigger_walls, path_landmarks
     robot_suffix = sys.argv[1]
-    global actuator, crammed_occupancy_grid
-    crammed_occupancy_grid = get_crammed_occupancy_grid()
+    min_wall_distance, x1, y1, x2, y2 = sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
+    print(f"Running path follower with params min_wall_distance={min_wall_distance}, start={(x1,y1)}, end={(x2,y2)}")
+    map_bigger_walls = get_crammed_occupancy_grid(min_wall_distance)
+
     rospy.init_node(f'path_following_{robot_suffix}')
     odometry_topic = '/ugv' + str(robot_suffix) + '/odom'
     vel_topic = '/ugv' + str(robot_suffix) + '/cmd_vel'
 
-    if robot_suffix == '1':
-        path_tuples = path_planer.a_star(crammed_occupancy_grid, (10, 30), (130, 90))
-    elif robot_suffix == '2':
-        path_tuples = path_planer.a_star(crammed_occupancy_grid, (130, 90), (10, 70))
+    path_tuples = path_planer.a_star(map_bigger_walls, (x1, y1), (x2, y2))
 
-    global path_landmarks
     path_landmarks = [Landmark(*l) for l in path_tuples]
-
     actuator = rospy.Publisher(vel_topic, Twist, queue_size=1)
     sub = rospy.Subscriber(odometry_topic, Odometry, clbk_odometry)
 
