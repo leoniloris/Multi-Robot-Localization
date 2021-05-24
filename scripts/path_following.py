@@ -40,7 +40,6 @@ class PathFollower:
         angle_error_for_actuation = np.sign(angle_error_for_actuation) * np.clip(abs(angle_error_for_actuation), 0, 1)
         angle_actuation = (5 / np.pi) * angle_error_for_actuation
 
-        print(angle_error_for_actuation)
         direction = 1 if angle_error < np.pi/2 or angle_error > 3*np.pi/2 else -1
         distance_error = np.clip(np.linalg.norm(position_error), 0, 1)
         gain = 0.4 - 0.37*(np.clip(abs(angle_error_for_actuation), 0, 45*np.pi/180)/(45*np.pi/180) )
@@ -55,7 +54,6 @@ class PathFollower:
             self.landmark_detection_distance = 0.6
         else:
             self.landmark_detection_distance = 1
-
 
     def clbk_odometry(self, msg):
         x = msg.pose.pose.position.x * CELLS_PER_METER + X_CENTER

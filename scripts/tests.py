@@ -24,7 +24,7 @@ def follow_path_from_file():
     rospy.init_node(f'path_following_{robot_suffix}')
     trajectory = get_trajectory_from_file(robot_suffix)
     path_landmarks = [path_following.Landmark(*l) for l in trajectory]
-    path_landmarks = [path_following.Landmark(110, 85), path_following.Landmark(121, 85) ]
+    # path_landmarks = [path_following.Landmark(110, 85), path_following.Landmark(121, 85) ]
 
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -36,7 +36,7 @@ def follow_path_from_file():
 
 
     path_follower = path_following.PathFollower(path_landmarks)
-    actuator = rospy.Publisher('/ugv' + str(robot_suffix) + '/cmd_vel', Twist, queue_size=1)
+    actuator = rospy.Publisher('/ugv' + str(robot_suffix) + '/cmd_vel', Twist, queue_size=10)
     sub = rospy.Subscriber('/ugv' + str(robot_suffix) + '/odom', Odometry, path_follower.clbk_odometry)
     sub = rospy.Subscriber('/ugv' + str(robot_suffix) + '/scan', LaserScan, path_follower.clbk_laser)
 
@@ -57,7 +57,7 @@ def follow_a_star_path():
     path_landmarks = [path_following.Landmark(*l) for l in path_planner.a_star(occupancy_grid, (x1, y1), (x2, y2))]
 
     path_follower = path_following.PathFollower(path_landmarks)
-    actuator = rospy.Publisher('/ugv' + str(robot_suffix) + '/cmd_vel', Twist, queue_size=1)
+    actuator = rospy.Publisher('/ugv' + str(robot_suffix) + '/cmd_vel', Twist, queue_size=10)
     sub = rospy.Subscriber('/ugv' + str(robot_suffix) + '/odom', Odometry, path_follower.clbk_odometry)
 
     rate = rospy.Rate(10)

@@ -48,10 +48,10 @@ class Cell:
         self.cost = self.distance_from_begining + heuristic[int(np.floor(self.position[0])), int(np.floor(self.position[1]))]
 
 
-def trace_back_path_with_smallest_cost(parent_cell):
+def trace_back_path_with_smallest_cost(parent_cell, occupancy_grid):
     def smooth_path(path):
         x,y = np.asarray(list(zip(*path))[0]), np.asarray(list(zip(*path))[1])
-        window_size = 12
+        window_size = 20
         x_filtered = []
         y_filtered = []
         for idx in range(-window_size//2, len(x)):
@@ -59,9 +59,10 @@ def trace_back_path_with_smallest_cost(parent_cell):
             w_end = np.clip(idx+(window_size//2), w_begin+1, len(x), dtype=np.int)
             w_x = x[w_begin:w_end]
             w_y = y[w_begin:w_end]
-
-            x_filter_order = np.clip(int(window_size/(w_x.std()+0.001)), 0, window_size-3)
-            y_filter_order = np.clip(int(window_size/(w_y.std()+0.001)), 0, window_size-3)
+            std_x = w_x.std()
+            std_y = w_y.std()
+            x_filter_order = np.clip(int(window_size/(std_x+0.001)), 0, window_size-3)
+            y_filter_order = np.clip(int(window_size/(std_y+0.001)), 0, window_size-3)
             subwindow_x_begin = window_size//2 - (x_filter_order//2) - 1
             subwindow_x_end = int(np.clip(window_size//2 + (x_filter_order//2) + 1, subwindow_x_begin+1, 10e10))
             subwindow_y_begin = window_size//2 - (y_filter_order//2) - 1
@@ -82,7 +83,6 @@ def trace_back_path_with_smallest_cost(parent_cell):
         current = current.parent
     path = path[::-1]
     return smooth_path(path)
-    # return path
 
 
 def get_adjacent_cells(parent_cell, occupancy_grid, heuristic):
@@ -136,7 +136,7 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
 
         has_found_end_cell = cell_with_smallest_cost == end_cell
         if has_found_end_cell:
-            return trace_back_path_with_smallest_cost(cell_with_smallest_cost)
+            return trace_back_path_with_smallest_cost(cell_with_smallest_cost, occupancy_grid)
 
         for adjacent_cell in get_adjacent_cells(cell_with_smallest_cost, occupancy_grid, heuristic):
             if adjacent_cell in visited_cells:

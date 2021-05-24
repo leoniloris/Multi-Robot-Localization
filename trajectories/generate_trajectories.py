@@ -1,11 +1,13 @@
+#!ipython -i
+
+import os
 import sys
-sys.path.append('../scripts')
+sys.path.append(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/scripts')
 import path_planner
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import re
-import os
 
 text = open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp', mode='r').read()
 occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', text)[0]
@@ -26,4 +28,5 @@ r2_path = path_planner.a_star(occupancy_grid, (130, 90), (10, 100)) +\
           path_planner.a_star(occupancy_grid, (110, 20), (100, 110)) +\
           path_planner.a_star(occupancy_grid, (100, 110), (20, 60))
 
-# echo "{}"
+# !echo "{r1_path}" > '{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/trajectories/a_star_1.txt'
+# !echo "{r2_path}" > '{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/trajectories/a_star_2.txt'
