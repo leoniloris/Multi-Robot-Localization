@@ -21,7 +21,6 @@ class Landmark:
         return np.asarray((self.x, self.y))
 
 
-LANDMARK_DETECTION_DISTANCE = 1
 with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/occupancy_grid.h", mode='r') as occupancy_grid_file:
     text = occupancy_grid_file.read()
     X_CENTER = float(re.findall(r'X_CENTER \((.*?)\)', text)[0])
@@ -33,18 +32,30 @@ class PathFollower:
     def __init__(self, path_landmarks):
         self.control_msg = Twist()
         self.path_landmarks = path_landmarks
+        self.landmark_detection_distance = 1
 
     def control_pose(self, position_error, angle_error):
         angle_error = np.fmod(angle_error+4*np.pi, 2*np.pi)
         angle_error_for_actuation = -angle_error if angle_error < np.pi else (2*np.pi - angle_error)
-        angle_error_for_actuation = np.sign(angle_error_for_actuation) * np.clip(abs(angle_error_for_actuation), 0.1, 1)
+        angle_error_for_actuation = np.sign(angle_error_for_actuation) * np.clip(abs(angle_error_for_actuation), 0, 1)
         angle_actuation = (5 / np.pi) * angle_error_for_actuation
 
+        print(angle_error_for_actuation)
         direction = 1 if angle_error < np.pi/2 or angle_error > 3*np.pi/2 else -1
-        distance_error = np.clip(np.linalg.norm(position_error), 0.1, 1)
-        gain = 0.4 if angle_error < (45*np.pi/180) else 0.1
+        distance_error = np.clip(np.linalg.norm(position_error), 0, 1)
+        gain = 0.4 - 0.37*(np.clip(abs(angle_error_for_actuation), 0, 45*np.pi/180)/(45*np.pi/180) )
         distance_actuation = direction * gain * distance_error
         return angle_actuation, distance_actuation
+
+    def clbk_laser(self, msg):
+        nearest_frontal_distance = min(msg.ranges[-60:] + msg.ranges[:60])
+        will_colide = nearest_frontal_distance < 0.5
+        if will_colide:
+            print("it will colide!!")
+            self.landmark_detection_distance = 0.6
+        else:
+            self.landmark_detection_distance = 1
+
 
     def clbk_odometry(self, msg):
         x = msg.pose.pose.position.x * CELLS_PER_METER + X_CENTER
@@ -54,6 +65,7 @@ class PathFollower:
         ])[2]
 
         target = self.get_target(x, y)
+
         print(f'im at {x,y} going to {target}')
         if target.checked:
             self.control_msg.angular.z = 0
@@ -72,5 +84,5 @@ class PathFollower:
 
     def clear_past_targets(self, x, y):
         for path_landmark in self.path_landmarks:
-            if np.linalg.norm(path_landmark.position() - np.asarray((x, y))) <= LANDMARK_DETECTION_DISTANCE:
+            if np.linalg.norm(path_landmark.position() - np.asarray((x, y))) <= self.landmark_detection_distance:
                 path_landmark.checked = True

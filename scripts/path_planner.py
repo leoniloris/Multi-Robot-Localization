@@ -49,27 +49,29 @@ class Cell:
 
 
 def trace_back_path_with_smallest_cost(parent_cell):
-    def rolling_window(data, window_size):
-        shape = data.shape[:-1] + (data.shape[-1]-window_size//2, window_size)
-        strides = data.strides + (data.strides[-1],)
-        return np.lib.stride_tricks.as_strided(data, shape=shape, strides=strides)
-
     def smooth_path(path):
         x,y = np.asarray(list(zip(*path))[0]), np.asarray(list(zip(*path))[1])
-        window_size = 20
+        window_size = 12
         x_filtered = []
-        for w in rolling_window(x, window_size):
-            filter_order = np.clip(int(window_size/(w.std()+0.001)), 0, window_size-3)
-            begin = window_size//2  -   (filter_order//2) - 1
-            end = window_size//2  +   (filter_order//2) + 1
-            x_filtered.append(w[begin:end].mean())
-
         y_filtered = []
-        for w in rolling_window(y, window_size):
-            filter_order = np.clip(int(window_size/(w.std()+0.001)), 0, window_size-3)
-            begin = window_size//2  -   (filter_order//2) - 1
-            end = window_size//2  +   (filter_order//2) + 1
-            y_filtered.append(w[begin:end].mean())
+        for idx in range(-window_size//2, len(x)):
+            w_begin = np.clip(idx-(window_size//2-1), 0, len(x), dtype=np.int)
+            w_end = np.clip(idx+(window_size//2), w_begin+1, len(x), dtype=np.int)
+            w_x = x[w_begin:w_end]
+            w_y = y[w_begin:w_end]
+
+            x_filter_order = np.clip(int(window_size/(w_x.std()+0.001)), 0, window_size-3)
+            y_filter_order = np.clip(int(window_size/(w_y.std()+0.001)), 0, window_size-3)
+            subwindow_x_begin = window_size//2 - (x_filter_order//2) - 1
+            subwindow_x_end = int(np.clip(window_size//2 + (x_filter_order//2) + 1, subwindow_x_begin+1, 10e10))
+            subwindow_y_begin = window_size//2 - (y_filter_order//2) - 1
+            subwindow_y_end = int(np.clip(window_size//2 + (y_filter_order//2) + 1, subwindow_y_begin+1, 10e10))
+
+            to_filter_x = w_x[subwindow_x_begin:subwindow_x_end]
+            to_filter_y = w_y[subwindow_y_begin:subwindow_y_end]
+            if len(to_filter_x) != 0 and len(to_filter_y) != 0:
+                x_filtered.append(to_filter_x.mean())
+                y_filtered.append(to_filter_y.mean())
         return list(zip(x_filtered,y_filtered))
 
 
@@ -80,7 +82,7 @@ def trace_back_path_with_smallest_cost(parent_cell):
         current = current.parent
     path = path[::-1]
     return smooth_path(path)
-
+    # return path
 
 
 def get_adjacent_cells(parent_cell, occupancy_grid, heuristic):
@@ -106,7 +108,17 @@ def create_heuristic_matrix(end_point: Tuple[int, int], occupancy_grid):
     return h
 
 
+def increase_wall_sizes(occupancy_grid):
+    min_wall_distance = 5
+    from scipy.ndimage import convolve
+    x_wall_increase = 5
+    y_wall_increase = 6
+    cramming_kernel = np.ones((x_wall_increase*2, y_wall_increase*2))
+    return np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
+
+
 def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
+    occupancy_grid = increase_wall_sizes(occupancy_grid)
     heuristic = create_heuristic_matrix(end, occupancy_grid)
     start_cell = Cell(None, start)
     end_cell = Cell(None, end)
@@ -148,12 +160,11 @@ def test():
     text = open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp', mode='r').read()
     occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', text)[0]
     occupancy_grid = np.loadtxt(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}', delimiter=",")
-
     try:
         import time
         a = time.time()
-        path = a_star(occupancy_grid, (130, 90), (10, 20))
-        # path = a_star(occupancy_grid, (130, 90), (10, 100))
+        # path = a_star(occupancy_grid, (130, 90), (10, 20))
+        path = a_star(occupancy_grid, (130, 90), (10, 100))
         print((time.time()-a))
     except KeyboardInterrupt as e:
         print(e)
@@ -161,7 +172,7 @@ def test():
     # TO DEBUG
     x, y = list(zip(*saving_stuff))
     path_x, path_y = list(zip(*path))
-    sns.heatmap(occupancy_grid)
+    sns.heatmap(increase_wall_sizes(occupancy_grid))
     plt.scatter(y, x, alpha=0.3)
     plt.scatter(path_y, path_x, alpha=1)
     plt.show()

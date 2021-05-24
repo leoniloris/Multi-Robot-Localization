@@ -7,6 +7,8 @@ import re
 
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import LaserScan
+
 
 def follow_path_from_file():
     def get_occupancy_grid():
@@ -22,12 +24,13 @@ def follow_path_from_file():
     rospy.init_node(f'path_following_{robot_suffix}')
     trajectory = get_trajectory_from_file(robot_suffix)
     path_landmarks = [path_following.Landmark(*l) for l in trajectory]
+    path_landmarks = [path_following.Landmark(110, 85), path_following.Landmark(121, 85) ]
 
     import matplotlib.pyplot as plt
     import seaborn as sns
     fig = plt.figure()
     fig.suptitle(f'{robot_suffix}', fontsize=20)
-    sns.heatmap(get_occupancy_grid(5))
+    sns.heatmap(get_occupancy_grid())
     plt.scatter(list(zip(*trajectory))[1], list(zip(*trajectory))[0])
     plt.pause(5)
 
@@ -35,6 +38,7 @@ def follow_path_from_file():
     path_follower = path_following.PathFollower(path_landmarks)
     actuator = rospy.Publisher('/ugv' + str(robot_suffix) + '/cmd_vel', Twist, queue_size=1)
     sub = rospy.Subscriber('/ugv' + str(robot_suffix) + '/odom', Odometry, path_follower.clbk_odometry)
+    sub = rospy.Subscriber('/ugv' + str(robot_suffix) + '/scan', LaserScan, path_follower.clbk_laser)
 
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
