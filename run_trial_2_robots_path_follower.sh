@@ -30,7 +30,7 @@ for TRIAL in {1..10}; do
 
     TRIAL=${TRIAL} run_trial
 
-    sleep 300
+    sleep 420
     kill_processes
     sleep 4
 done

@@ -81,6 +81,12 @@ class PathFollower:
         return next((path_landmark for path_landmark in self.path_landmarks if not path_landmark.checked), self.path_landmarks[0])
 
     def clear_past_targets(self, x, y):
+        found_near_target = False
         for path_landmark in self.path_landmarks:
-            if np.linalg.norm(path_landmark.position() - np.asarray((x, y))) <= self.landmark_detection_distance:
+            is_near = np.linalg.norm(path_landmark.position() - np.asarray((x, y))) <= self.landmark_detection_distance
+            if is_near:
+                found_near_target = True
                 path_landmark.checked = True
+
+            if not is_near and found_near_target:
+                return
