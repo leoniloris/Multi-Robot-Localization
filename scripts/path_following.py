@@ -51,9 +51,9 @@ class PathFollower:
         will_colide = nearest_frontal_distance < 0.5
         if will_colide:
             print("it will colide!!")
-            self.landmark_detection_distance = 0.6
+            self.landmark_detection_distance = 0.5
         else:
-            self.landmark_detection_distance = 1
+            self.landmark_detection_distance = 0.8
 
     def clbk_odometry(self, msg):
         x = msg.pose.pose.position.x * CELLS_PER_METER + X_CENTER
