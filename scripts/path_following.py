@@ -38,7 +38,7 @@ class PathFollower:
         angle_error = np.fmod(angle_error+4*np.pi, 2*np.pi)
         angle_error_for_actuation = -angle_error if angle_error < np.pi else (2*np.pi - angle_error)
         angle_error_for_actuation = np.sign(angle_error_for_actuation) * np.clip(abs(angle_error_for_actuation), 0, 1)
-        angle_actuation = (5 / np.pi) * angle_error_for_actuation
+        angle_actuation = (4 / np.pi) * angle_error_for_actuation
 
         direction = 1 if angle_error < np.pi/2 or angle_error > 3*np.pi/2 else -1
         distance_error = np.clip(np.linalg.norm(position_error), 0, 1)
@@ -47,13 +47,13 @@ class PathFollower:
         return angle_actuation, distance_actuation
 
     def clbk_laser(self, msg):
-        nearest_frontal_distance = min(msg.ranges[-60:] + msg.ranges[:60])
+        nearest_frontal_distance = min(msg.ranges[-90:] + msg.ranges[:90])
         will_colide = nearest_frontal_distance < 0.5
         if will_colide:
             print("it will colide!!")
             self.landmark_detection_distance = 0.5
         else:
-            self.landmark_detection_distance = 0.8
+            self.landmark_detection_distance = 1
 
     def clbk_odometry(self, msg):
         x = msg.pose.pose.position.x * CELLS_PER_METER + X_CENTER
