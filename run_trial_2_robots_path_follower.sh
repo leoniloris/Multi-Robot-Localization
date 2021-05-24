@@ -5,7 +5,7 @@ function kill_processes {
     echo "Stopping processes..."
     sleep 2
     pkill -f robot_node
-    pkill -f path_following
+    pkill -f tests
     pkill -f gazebo
     pkill -f python3
     pkill -f noetic
@@ -16,9 +16,9 @@ function run_trial {
     sleep 4
 
     rosrun multi_robot_localization robot_node 1 & \
-    python3 src/multi_robot_localization/scripts/path_from_file_following.py 1 & \
+    python3 src/multi_robot_localization/scripts/tests.py follow_path_from_file 1 & \
     rosrun multi_robot_localization robot_node 2 & \
-    python3 src/multi_robot_localization/scripts/path_from_file_following.py 2 &
+    python3 src/multi_robot_localization/scripts/tests.py follow_path_from_file 2 &
 }
 
 trap kill_processes SIGINT
