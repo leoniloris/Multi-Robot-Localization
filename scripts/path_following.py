@@ -21,7 +21,7 @@ class Landmark:
         return np.asarray((self.x, self.y))
 
 
-LANDMARK_DETECTION_DISTANCE = 3
+LANDMARK_DETECTION_DISTANCE = 5
 with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/occupancy_grid.h", mode='r') as occupancy_grid_file:
     text = occupancy_grid_file.read()
     X_CENTER = float(re.findall(r'X_CENTER \((.*?)\)', text)[0])
@@ -67,7 +67,7 @@ class PathFollower:
     def control_position(self, position_error, angle_error):
         angle_error = np.fmod(angle_error+4*np.pi, 2*np.pi)
         direction = 1 if angle_error < np.pi/2 or angle_error > 3*np.pi/2 else -1
-        distance_error = np.clip(np.linalg.norm(position_error), 0.1, 1)
+        distance_error = np.clip(np.linalg.norm(position_error), 0, 1)
         return direction * 0.4 * distance_error
 
     def get_target(self, x, y):
@@ -77,3 +77,4 @@ class PathFollower:
         for path_landmark in self.path_landmarks:
             if np.linalg.norm(path_landmark.position() - np.asarray((x, y))) <= LANDMARK_DETECTION_DISTANCE:
                 path_landmark.checked = True
+                return
