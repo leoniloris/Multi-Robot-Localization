@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from scipy.ndimage import convolve
 from typing import Tuple
 
+import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import os
 
@@ -133,8 +135,6 @@ def test():
     # # TO DEBUG
     # x, y = list(zip(*saving_stuff))
     # path_x, path_y = list(zip(*path))
-    # import seaborn as sns
-    # import matplotlib.pyplot as plt
     # sns.heatmap(occupancy_grid)
     # plt.scatter(y, x, alpha=0.3)
     # plt.scatter(path_y, path_x, alpha=1)

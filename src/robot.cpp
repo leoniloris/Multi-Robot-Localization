@@ -69,6 +69,7 @@ void Robot::publush_clusters() {
         cluster_to_publish.x = cluster.x;
         cluster_to_publish.y = cluster.y;
         cluster_to_publish.angle = cluster.angle;
+        cluster_to_publish.weight = cluster.weight;
         cluster_to_publish.type = CLUSTER;
         clusters_to_publish.clusters.push_back(cluster_to_publish);
     }
