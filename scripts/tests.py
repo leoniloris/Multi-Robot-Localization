@@ -11,10 +11,9 @@ from sensor_msgs.msg import LaserScan
 
 
 def follow_path_from_file():
-    def get_occupancy_grid():
-        occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp', mode='r').read())[0]
-        return np.loadtxt(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}', delimiter=",")
-
+    # def get_occupancy_grid():
+    #     occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp', mode='r').read())[0]
+    #     return np.loadtxt(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}', delimiter=",")
 
     def get_trajectory_from_file(robot_suffix):
         with open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/trajectories/a_star_{robot_suffix}.txt') as f:
@@ -26,13 +25,13 @@ def follow_path_from_file():
     path_landmarks = [path_following.Landmark(*l) for l in trajectory]
     # path_landmarks = [path_following.Landmark(110, 85), path_following.Landmark(121, 85) ]
 
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    fig = plt.figure()
-    fig.suptitle(f'{robot_suffix}', fontsize=20)
-    sns.heatmap(get_occupancy_grid())
-    plt.scatter(list(zip(*trajectory))[1], list(zip(*trajectory))[0])
-    plt.pause(5)
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
+    # fig = plt.figure()
+    # fig.suptitle(f'{robot_suffix}', fontsize=20)
+    # sns.heatmap(get_occupancy_grid())
+    # plt.scatter(list(zip(*trajectory))[1], list(zip(*trajectory))[0])
+    # plt.pause(5)
 
 
     path_follower = path_following.PathFollower(path_landmarks)

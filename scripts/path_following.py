@@ -1,3 +1,4 @@
+import enum
 import numpy as np
 import path_planner
 import rospy
@@ -35,6 +36,7 @@ class PathFollower:
         self.landmark_detection_distance = 1
 
     def control_pose(self, position_error, angle_error):
+        # print("errors", position_error, angle_error)
         angle_error = np.fmod(angle_error+4*np.pi, 2*np.pi)
         angle_error_for_actuation = -angle_error if angle_error < np.pi else (2*np.pi - angle_error)
         angle_error_for_actuation = np.sign(angle_error_for_actuation) * np.clip(abs(angle_error_for_actuation), 0, 1)
@@ -44,6 +46,7 @@ class PathFollower:
         distance_error = np.clip(np.linalg.norm(position_error), 0, 1)
         gain = 0.4 - 0.37*(np.clip(abs(angle_error_for_actuation), 0, 45*np.pi/180)/(45*np.pi/180) )
         distance_actuation = direction * gain * distance_error
+        # print(">>>>>>", direction, distance_error, gain, distance_actuation)
         return angle_actuation, distance_actuation
 
     def clbk_laser(self, msg):
@@ -62,10 +65,8 @@ class PathFollower:
             msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w
         ])[2]
 
-        target = self.get_target(x, y)
-
-        print(f'im at {x,y} going to {target}')
-        if target.checked:
+        target = self.get_target()
+        if target is None or target.checked:
             self.control_msg.angular.z = 0
             self.control_msg.linear.x = 0
             return
@@ -74,19 +75,20 @@ class PathFollower:
         angle_error = angle - np.arctan2(*position_error[-1::-1])
         self.control_msg.angular.z, self.control_msg.linear.x =\
             self.control_pose(position_error, angle_error)
+
         self.clear_past_targets(x, y)
 
-
-    def get_target(self, x, y):
-        return next((path_landmark for path_landmark in self.path_landmarks if not path_landmark.checked), self.path_landmarks[0])
+    def get_target(self):
+        for path_landmark in self.path_landmarks:
+            if not path_landmark.checked:
+                return path_landmark
 
     def clear_past_targets(self, x, y):
         found_near_target = False
         for path_landmark in self.path_landmarks:
             is_near = np.linalg.norm(path_landmark.position() - np.asarray((x, y))) <= self.landmark_detection_distance
-            if is_near:
+            if is_near and not path_landmark.checked:
                 found_near_target = True
                 path_landmark.checked = True
-
-            if not is_near and found_near_target:
+            elif not is_near and found_near_target:
                 return
