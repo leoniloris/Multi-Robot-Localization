@@ -16,7 +16,7 @@ function run_trial {
     sleep 4
 
     rosrun multi_robot_localization robot_node 1 & \
-    python3 src/multi_robot_localization/scripts/active_path_following.py 1 & \
+    python3 src/multi_robot_localization/scripts/active_path_following.py 1 2 3 & \
     # rosrun multi_robot_localization robot_node 2 & \
     # python3 src/multi_robot_localization/scripts/active_path_following.py 2 &
 }
