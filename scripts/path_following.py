@@ -30,7 +30,7 @@ with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/
 
 
 LANDMARK_DETECTION_DISTANCE = 0.8
-AVOIDING_OBSTACLE_COUNTER_EXPIRITY = 10
+AVOIDING_OBSTACLE_COUNTER_EXPIRITY = 12
 
 class PathFollower:
     def __init__(self, path_landmarks):
