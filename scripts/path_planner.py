@@ -8,9 +8,9 @@ import numpy as np
 import os
 
 ADJACENT_CELL_DISPLACEMENTS = [
-    (-1, -1), (0, -1), (1, -1),
-    (-1,  0),          (1,  0),
-    (-1,  1), (0,  1), (1,  1),
+    (-2, -2, 2), (0, -2, 2), (2, -2, 2),
+    (-2,  0, 2),          (2,  0, 2),
+    (-2,  2, 2), (0,  2, 2), (2,  2, 2),
 ]
 # ADJACENT_CELL_DISPLACEMENTS = [
 #              (0, -1),
@@ -44,7 +44,7 @@ class Cell:
     def displace(self, displacement, heuristic):
         self.position = (self.position[0] + displacement[0],
                          self.position[1] + displacement[1])
-        self.distance_from_begining += 1#displacement[2]
+        self.distance_from_begining += displacement[2]
         self.cost = self.distance_from_begining + heuristic[int(np.floor(self.position[0])), int(np.floor(self.position[1]))]
 
 
@@ -126,9 +126,9 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
     cells_yet_to_visit = [start_cell]
     visited_cells = []
 
-    # # TO DEBUG
-    # global saving_stuff
-    # saving_stuff = []
+    # TO DEBUG
+    global saving_stuff
+    saving_stuff = []
     while len(cells_yet_to_visit) > 0:
         cell_with_smallest_cost = min(cells_yet_to_visit, key=lambda c: c.cost)
         cells_yet_to_visit.remove(cell_with_smallest_cost)
@@ -151,8 +151,8 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
                         break
                 else:
                     cells_yet_to_visit.append(adjacent_cell)
-                    # # TO DEBUG
-                    # saving_stuff.append(adjacent_cell.position)
+                    # TO DEBUG
+                    saving_stuff.append(adjacent_cell.position)
 
 
 def test():
@@ -169,13 +169,13 @@ def test():
     except KeyboardInterrupt as e:
         print(e)
 
-    # # TO DEBUG
-    # x, y = list(zip(*saving_stuff))
-    # path_x, path_y = list(zip(*path))
-    # sns.heatmap(increase_wall_sizes(occupancy_grid))
-    # plt.scatter(y, x, alpha=0.3)
-    # plt.scatter(path_y, path_x, alpha=1)
-    # plt.show()
+    # TO DEBUG
+    x, y = list(zip(*saving_stuff))
+    path_x, path_y = list(zip(*path))
+    sns.heatmap(increase_wall_sizes(occupancy_grid))
+    plt.scatter(y, x, alpha=0.3)
+    plt.scatter(path_y, path_x, alpha=1)
+    plt.show()
 
 if __name__ == '__main__':
     test()
