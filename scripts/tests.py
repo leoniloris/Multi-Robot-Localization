@@ -16,7 +16,7 @@ def follow_path_from_file():
     #     return np.loadtxt(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}', delimiter=",")
 
     def get_trajectory_from_file(robot_suffix):
-        with open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/trajectories/a_star_{robot_suffix}.txt') as f:
+        with open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/trajectories/a_star_{robot_suffix}_obstacles.txt') as f:
             return [tuple(map(float, i.split(','))) for i in f]
 
     robot_suffix = sys.argv[2]
