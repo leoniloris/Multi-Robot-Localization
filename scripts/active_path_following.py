@@ -31,8 +31,9 @@ class RobotStuff:
     clusters: 'typing.Any' = field(default={})
     previous_clusters_idxs: 'typing.Any' = field(default={})
     current_clusters_idxs: 'typing.Any' = field(default={})
-    main_cluster_id: int = = field(default=0)
-
+    main_cluster_id: int = field(default=0)
+    laser_sub : 'typing.Any' = field(default=None)
+    odometry_sub : 'typing.Any' = field(default=None)
 
 
 n_iterations_with_same_certain_clusters = 0
@@ -63,7 +64,7 @@ def clusters_recv_cb(msg):
 paths_last_calculated_at = time.time()
 def run_active_localization():
     # check if it's time to update  paths
-    if (time.time() - paths_last_calculated_at) <= 5:
+    if (time.time() - paths_last_calculated_at) <= 4: # seconds
         return
 
     # for each robot select cluster with main_cluster_id'th largest weight
@@ -88,13 +89,15 @@ def run_active_localization():
         for robot_id,robot_begin_end in robots_begin_end.items()
     }
 
-
-    # path_follower = path_following.PathFollower(path_landmarks)
+    for robot_id, robot_stuff in robots_stuff.items():
+        robot_stuff.path_follower = path_following.PathFollower(robots_paths[robot_id])
+        robot_stuff.laser_sub = rospy.Subscriber(f'/ugv{str(robot_suffix)}/scan', LaserScan, path_follower.clbk_laser)
+        robot_stuff.odometry_sub = rospy.Subscriber(f'/ugv{str(robot_suffix)}/odom', Odometry, path_follower.clbk_odometry)
     # actuator = rospy.Publisher('/ugv' + str(robot_suffix) + '/cmd_vel', Twist, queue_size=10)
     # sub = rospy.Subscriber('/ugv' + str(robot_suffix) + '/odom', Odometry, path_follower.clbk_odometry)
     # sub = rospy.Subscriber('/ugv' + str(robot_suffix) + '/scan', LaserScan, path_follower.clbk_laser)
 
-    # for each robot: check if whether it's finished the path (stop experiment) or an obstacle was found (change main_cluster_id)
+    # for each robot: check whether it's finished the path (stop experiment) or an obstacle was found (change main_cluster_id)
     #### when finished, we need to set running_active_localization = False
 
 
