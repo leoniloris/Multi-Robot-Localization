@@ -33,7 +33,6 @@ class RobotStuff:
     current_clusters_idxs: 'typing.Any' = field(default={})
     main_cluster_id: int = field(default=0)
     laser_sub : 'typing.Any' = field(default=None)
-    odometry_sub : 'typing.Any' = field(default=None)
 
 
 n_iterations_with_same_certain_clusters = 0
@@ -92,7 +91,6 @@ def run_active_localization():
     for robot_id, robot_stuff in robots_stuff.items():
         robot_stuff.path_follower = path_following.PathFollower(robots_paths[robot_id])
         robot_stuff.laser_sub = rospy.Subscriber(f'/ugv{str(robot_suffix)}/scan', LaserScan, path_follower.clbk_laser)
-        robot_stuff.odometry_sub = rospy.Subscriber(f'/ugv{str(robot_suffix)}/odom', Odometry, path_follower.clbk_odometry)
 
     # for each robot: check whether it's finished the path (stop experiment) or an obstacle was found (change main_cluster_id)
     #### when finished, we need to set running_active_localization = False and unregister callbacks
