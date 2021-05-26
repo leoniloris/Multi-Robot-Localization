@@ -15,10 +15,9 @@ function run_trial {
     roslaunch -v multi_robot_localization main.launch n_robots:=2 &
     sleep 4
 
-    rosrun multi_robot_localization robot_node 1 & \
     python3 src/multi_robot_localization/scripts/active_path_following.py 1 2 3 & \
+    rosrun multi_robot_localization robot_node 1 & \
     # rosrun multi_robot_localization robot_node 2 & \
-    # python3 src/multi_robot_localization/scripts/active_path_following.py 2 &
 }
 
 trap kill_processes SIGINT
