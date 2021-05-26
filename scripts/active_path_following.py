@@ -6,22 +6,13 @@ import path_following
 import path_planner
 import numpy as np
 import rospy
+import time
 import sys
 
 N_MOST_CERTAIN_CLUSTERS = 3
 N_ITERATIONS_WITH_CERTAIN_CLUSTERS = 10
 
 robots_stuff = {}
-
-
-debounce_counter = 0
-def debounce():
-    global debounce_counter
-    debounce_counter += 1
-    if debounce_counter < 10:
-        return True
-    debounce_counter = 0
-    return False
 
 
 @dataclass
@@ -36,9 +27,11 @@ class RobotStuff:
 
 n_iterations_with_same_certain_clusters = 0
 running_active_localization = False
+odometry_last_run_at = time.time()
 def clusters_recv_cb(msg):
     global robots_stuff, running_active_localization, n_iterations_with_same_certain_clusters
-    if debounce() and not running_active_localization:
+    if (time.time() - odometry_last_run_at) <= 0.3 and not running_active_localization:
+        odometry_last_run_at = time.time()
         return
 
     robot_id = msg.robot_id
@@ -57,14 +50,18 @@ def clusters_recv_cb(msg):
         n_iterations_with_same_certain_clusters = 0
 
 
-def start_active_localization():
-    #### when finished, we need to set running_active_localization = False
-    # check if it's time to update a_star paths
+paths_last_calculated_at = time.time()
+def run_active_localization():
+    # check if it's time to update  paths
+    if (time.time() - paths_last_calculated_at) <= 3.5:
+        return
+
     # for each robot select cluster with main_cluster_id'th largest weight
+
     # for each robot compute path to the largest-weighted cluster from someone else
     # put each robot to follow that path
     # for each robot: check if whether it's finished the path (stop experiment) or an obstacle was found (change main_cluster_id)
-
+    #### when finished, we need to set running_active_localization = False
 
 
 def main():
