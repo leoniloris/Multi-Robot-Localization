@@ -96,6 +96,10 @@ class PathFollower:
             msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w
         ])[2]
 
+        self.control_pose_from_setpoint(x, y, angle)
+
+
+    def control_pose_from_setpoint(x, y, angle):
         target = self.get_target()
         if target is None or target.checked:
             self.control_msg.angular.z = 0
@@ -107,6 +111,7 @@ class PathFollower:
         self.control_pose(position_error, angle_error)
 
         self.clear_past_targets(x, y)
+
 
     def get_target(self):
         for path_landmark in self.path_landmarks:

@@ -93,12 +93,9 @@ def run_active_localization():
         robot_stuff.path_follower = path_following.PathFollower(robots_paths[robot_id])
         robot_stuff.laser_sub = rospy.Subscriber(f'/ugv{str(robot_suffix)}/scan', LaserScan, path_follower.clbk_laser)
         robot_stuff.odometry_sub = rospy.Subscriber(f'/ugv{str(robot_suffix)}/odom', Odometry, path_follower.clbk_odometry)
-    # actuator = rospy.Publisher('/ugv' + str(robot_suffix) + '/cmd_vel', Twist, queue_size=10)
-    # sub = rospy.Subscriber('/ugv' + str(robot_suffix) + '/odom', Odometry, path_follower.clbk_odometry)
-    # sub = rospy.Subscriber('/ugv' + str(robot_suffix) + '/scan', LaserScan, path_follower.clbk_laser)
 
     # for each robot: check whether it's finished the path (stop experiment) or an obstacle was found (change main_cluster_id)
-    #### when finished, we need to set running_active_localization = False
+    #### when finished, we need to set running_active_localization = False and unregister callbacks
 
 
 def main():
