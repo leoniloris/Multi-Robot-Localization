@@ -84,7 +84,7 @@ def run_active_localization():
 
     # put each robot to follow that path
     robots_paths = {
-        robot_id: path_planner.a_star(OCCUPANCY_GRID, robot_begin_end[0], robot_begin_end[1])
+        robot_id: [path_following.Landmark(*l) for l in path_planner.a_star(OCCUPANCY_GRID, robot_begin_end[0], robot_begin_end[1])]
         for robot_id,robot_begin_end in robots_begin_end.items()
     }
 
