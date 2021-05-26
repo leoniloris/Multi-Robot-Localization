@@ -8,7 +8,16 @@ import numpy as np
 import rospy
 import time
 import sys
+import re
 
+
+def load_occupancy_grid():
+    text = open(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/src/occupancy_grid.cpp', mode='r').read()
+    occupancy_grid_file = re.findall(r'/occupancy_grid/(.*)"', text)[0]
+    return np.loadtxt(f'{os.environ["HOME"]}/catkin_ws/src/multi_robot_localization/occupancy_grid/{occupancy_grid_file}', delimiter=",")
+
+
+OCCUPANCY_GRID = load_occupancy_grid()
 N_MOST_CERTAIN_CLUSTERS = 3
 N_ITERATIONS_WITH_CERTAIN_CLUSTERS = 10
 
@@ -23,6 +32,7 @@ class RobotStuff:
     previous_clusters_idxs: 'typing.Any' = field(default={})
     current_clusters_idxs: 'typing.Any' = field(default={})
     main_cluster_id: int = = field(default=0)
+
 
 
 n_iterations_with_same_certain_clusters = 0
@@ -53,13 +63,31 @@ def clusters_recv_cb(msg):
 paths_last_calculated_at = time.time()
 def run_active_localization():
     # check if it's time to update  paths
-    if (time.time() - paths_last_calculated_at) <= 3.5:
+    if (time.time() - paths_last_calculated_at) <= 5:
         return
 
     # for each robot select cluster with main_cluster_id'th largest weight
-
+    robots_main_cluster = {
+        robot_id: robot_stuff.clusters[robot_stuff.main_cluster_id]
+        for robot_id, robot_stuff in robots_stuff.items()
+    }
     # for each robot compute path to the largest-weighted cluster from someone else
+    robots_begin_end = {}
+    for robot_id, robot_main_clusters in robots_main_cluster.items():
+        most_probable_cluster_other_robots = max(
+            {r_id: r_main_cluster for (r_id, r_main_cluster) in robots_main_cluster.items() if r_id != robot_id},
+            key=lambda c: c.weight)
+        robots_begin_end[robot_id] = [
+            (robot_main_clusters.x, robot_main_clusters.y),
+            (most_probable_cluster_other_robots.x, most_probable_cluster_other_robots.y)
+        ]
+
     # put each robot to follow that path
+    robots_paths = {
+        robot_id: path_planner.a_star(OCCUPANCY_GRID, robot_begin_end[0], robot_begin_end[1])
+        for robot_id,robot_begin_end in robots_begin_end.items()
+    }
+
     # for each robot: check if whether it's finished the path (stop experiment) or an obstacle was found (change main_cluster_id)
     #### when finished, we need to set running_active_localization = False
 
@@ -72,8 +100,8 @@ def main():
     }
     rospy.init_node(f'active_path_following')
     sub = rospy.Subscriber('robot_inf_broadcast', ParticlesClusters, clusters_recv_cb)
-
     scheduler = rospy.Rate(20)
+
     while not rospy.is_shutdown():
         if running_active_localization:
             run_active_localization_state_machine()
