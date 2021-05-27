@@ -99,7 +99,7 @@ class PathFollower:
         self.control_pose_from_setpoint(x, y, angle)
 
 
-    def control_pose_from_setpoint(x, y, angle):
+    def control_pose_from_setpoint(self, robot_x, robot_y, robot_angle):
         target = self.get_target()
         if target is None or target.checked:
             self.control_msg.angular.z = 0
