@@ -42,9 +42,6 @@ class State:
     robots_stuff: Any = field(default_factory=dict)
 
 
-state = State()
-
-
 def get_indexes_for_decreasing_order_of_cluster_weight(clusters):
     return set(np.argsort([
         c.weight for c in clusters
@@ -53,13 +50,16 @@ def get_indexes_for_decreasing_order_of_cluster_weight(clusters):
 
 def clusters_recv_cb(msg):
     global state
-    if state.running_active_localization and state.robots_stuff[robot_id].path_follower is not None:
+    should_run_odometry_for_active_localization = state.running_active_localization and state.robots_stuff[robot_id].path_follower is not None
+    if should_run_odometry_for_active_localization:
+        print("should_run_odometry_for_active_localization")
         state.robots_stuff[robot_id].path_follower.control_pose_from_setpoint(cluster_x, cluster_y, cluster_angle)
 
-    if (time.time() - odometry_last_run_at) <= 0.3 and not running_active_localization:
-        odometry_last_run_at = time.time()
+    if (time.time() - state.odometry_last_run_at) <= 0.3 and not state.running_active_localization:
+        state.odometry_last_run_at = time.time()
         return
 
+    print("1 ==========")
     state.running_active_localization = process_odometry(msg)
     if state.running_active_localization:
         state.n_iterations_with_same_certain_clusters = 0
@@ -127,19 +127,20 @@ def run_active_localization():
 
 def main():
     global state
-    rospy.init_node(f'active_path_following')
-
+    state = State()
+    rospy.init_node('active_path_following')
     state.robots_stuff = {
         int(robot_id): RobotStuff(rospy.Publisher(f'/ugv{str(robot_id)}/cmd_vel', Twist, queue_size=1))\
         for robot_id in sys.argv[1:]
     }
 
     _clusters_subscriber = rospy.Subscriber('robot_inf_broadcast', ParticlesClusters, clusters_recv_cb)
-    scheduler = rospy.Rate(20)
+    print(">>>>================ ", _clusters_subscriber)
+    rate = rospy.Rate(10)
 
     while not rospy.is_shutdown():
         publish_control_messages()
-        scheduler.sleep()
+        rate.sleep()
 
 
 def publish_control_messages():
