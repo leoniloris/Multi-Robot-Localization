@@ -6,6 +6,7 @@ function kill_processes {
     sleep 2
     pkill -f robot_node
     pkill -f active_path_following
+    pkill -f multi_robot_localization
     pkill -f gazebo
     pkill -f python3
     pkill -f noetic
@@ -17,7 +18,7 @@ function run_trial {
 
     python3 src/multi_robot_localization/scripts/active_path_following.py 1 2 & \
     rosrun multi_robot_localization robot_node 1 & \
-    # rosrun multi_robot_localization robot_node 2 & \
+    rosrun multi_robot_localization robot_node 2 & \
 }
 
 trap kill_processes SIGINT
