@@ -7,7 +7,7 @@ function kill_processes {
     pkill -f robot_node
     pkill -f wall_following
     pkill -f gazebo
-    pkill -f python3
+    pkill -f python
     pkill -f noetic
 }
 

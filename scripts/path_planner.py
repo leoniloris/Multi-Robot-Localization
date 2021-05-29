@@ -136,7 +136,7 @@ def find_free_start_end(start, end, occupancy_grid):
             if start_set and end_set:
                 return start, end
 
-def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int], x_wall_increase=4, y_wall_increase=4):
+def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int], x_wall_increase=4, y_wall_increase=6):
     occupancy_grid = increase_wall_sizes(occupancy_grid, x_wall_increase, y_wall_increase)
     heuristic = create_heuristic_matrix(end, occupancy_grid)
     start, end = find_free_start_end(start, end, occupancy_grid)
@@ -178,12 +178,13 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int], x_wall_
 
 
 def plot_stuff(saving_stuff, path, occupancy_grid):
+    fig, ax = plt.subplots()
     x, y = list(zip(*saving_stuff))
     path_x, path_y = list(zip(*path))
-    sns.heatmap(occupancy_grid)
-    plt.scatter(y, x, alpha=0.3)
-    plt.scatter(path_y, path_x, alpha=1)
-    plt.show()
+    sns.heatmap(occupancy_grid, ax=ax)
+    ax.scatter(y, x, alpha=0.3)
+    ax.scatter(path_y, path_x, alpha=1)
+    plt.pause(0.1)
 
 
 def test():

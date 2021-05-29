@@ -29,7 +29,7 @@ with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/
     CELLS_PER_METER = float(re.findall(r'CELLS_PER_METER \((.*?)\)', text)[0])
 
 
-LANDMARK_DETECTION_DISTANCE = 0.8
+LANDMARK_DETECTION_DISTANCE = 1.8
 AVOIDING_OBSTACLE_COUNTER_EXPIRITY = 12
 
 class PathFollower:
@@ -57,7 +57,7 @@ class PathFollower:
 
     def clbk_laser(self, msg):
         nearest_frontal_distance = min(msg.ranges[-60:] + msg.ranges[:60])
-        should_avoid_obstacle = nearest_frontal_distance < 0.25
+        should_avoid_obstacle = nearest_frontal_distance < 0.1
 
 
         if should_avoid_obstacle:
@@ -108,6 +108,7 @@ class PathFollower:
             self.control_msg.linear.x = 0
             return
 
+        print(f'from {robot_x, robot_y} to {target.position()[0],target.position()[1]}')
         position_error = target.position() - np.asarray([robot_x, robot_y])
         angle_error = robot_angle - np.arctan2(*position_error[-1::-1])
         self.control_pose(position_error, angle_error)

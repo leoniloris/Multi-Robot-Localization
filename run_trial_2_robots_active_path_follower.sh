@@ -36,3 +36,5 @@ for TRIAL in {1..1}; do
     kill_processes
     sleep 4
 done
+
+kill_processes
