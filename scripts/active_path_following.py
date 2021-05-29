@@ -61,6 +61,8 @@ def clusters_recv_cb(msg):
 
         cluster = state.robots_stuff[robot_id].clusters[cluster_id]
         cluster_x, cluster_y, cluster_angle = cluster.x, cluster.y, cluster.angle
+        if str(robot_id) == '1':
+            print(cluster_x, cluster_y)
         state.robots_stuff[robot_id].path_follower.control_pose_from_setpoint(cluster_y, cluster_x, cluster_angle)
 
     ## do this debounce, but for each separate robot

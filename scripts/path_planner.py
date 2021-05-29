@@ -157,7 +157,7 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int], x_wall_
         has_found_end_cell = cell_with_smallest_cost == end_cell
         if has_found_end_cell:
             path = trace_back_path_with_smallest_cost(cell_with_smallest_cost, occupancy_grid)
-            plot_stuff(saving_stuff, path, occupancy_grid)
+            # plot_stuff(saving_stuff, path, occupancy_grid)
             return path
 
         for adjacent_cell in get_adjacent_cells(cell_with_smallest_cost, occupancy_grid, heuristic):
