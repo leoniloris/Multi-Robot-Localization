@@ -138,9 +138,12 @@ def run_active_localization():
     # put each robot to follow that path
     print(f'robots_begin_end {robots_begin_end}')
     robots_paths = {
-        robot_id: [path_following.Landmark(*l) for l in path_planner.a_star(
-            OCCUPANCY_GRID, tuple(np.int_(robot_begin_end[0])), tuple(np.int_(robot_begin_end[1]))),
-            x_wall_increase=2, y_wall_increase=2
+        robot_id: [path_following.Landmark(*l) for l in
+        path_planner.a_star(OCCUPANCY_GRID,
+                            tuple(np.int_(robot_begin_end[0])),
+                            tuple(np.int_(robot_begin_end[1])),
+                            x_wall_increase=4,
+                            y_wall_increase=1)
         ]
         for robot_id,robot_begin_end in robots_begin_end.items()
     }
@@ -149,6 +152,7 @@ def run_active_localization():
         robot_stuff.path_follower = path_following.PathFollower(robots_paths[robot_id])
         robot_stuff.laser_sub = rospy.Subscriber(f'/ugv{str(robot_id)}/scan', LaserScan, robot_stuff.path_follower.clbk_laser)
 
+    print(robot_stuff.path_follower, robot_stuff.laser_sub)
     #### when finished, we need to set running_active_localization = False and unregister callbacks, set None stuff to None
 
 
