@@ -120,7 +120,7 @@ def run_active_localization():
 
     # for each robot select cluster with main_cluster_idx'th largest weight
     robots_main_cluster = {
-        robot_id: robot_stuff.clusters[robot_stuff.main_cluster_idx]
+        robot_id: robot_stuff.clusters[robot_stuff.current_most_certain_clusters_ids[robot_stuff.main_cluster_idx]]
         for robot_id, robot_stuff in state.robots_stuff.items()
     }
 
@@ -137,6 +137,7 @@ def run_active_localization():
 
     # put each robot to follow that path
     robots_paths = {}
+    print(robots_begin_end)
     for robot_id,robot_begin_end in robots_begin_end.items():
         print('robot_begin_end', robot_id, tuple(np.int_(robot_begin_end[0])), tuple(np.int_(robot_begin_end[1])))
         robots_paths[robot_id] = [

@@ -8,8 +8,10 @@
 #include <vector>
 
 #define CELLS_PER_METER (10.0)
-#define X_CENTER (70.0) // rooms_small
-#define Y_CENTER (60.0) // rooms_small
+// #define X_CENTER (70.0) // rooms_small
+// #define Y_CENTER (60.0) // rooms_small
+#define X_CENTER (69.0) // rooms_small
+#define Y_CENTER (59.0) // rooms_small
 
 // #define X_CENTER (75) // cross_small
 // #define Y_CENTER (75) // cross_small
