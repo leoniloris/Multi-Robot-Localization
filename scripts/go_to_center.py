@@ -129,15 +129,15 @@ def run_active_localization():
         return
     state.paths_last_calculated_at = time.time()
 
-    # change main_cluster_idx if required by wall colision
-    for robot_id, robot_stuff in state.robots_stuff.items():
-        if robot_stuff.path_follower is not None and robot_stuff.path_follower.path_is_probably_obstructed:
-            print("HIT THE WALL")
-            robot_stuff.main_cluster_idx += 1
-            if robot_stuff.laser_sub is not None:
-                robot_stuff.laser_sub.unregister()
-                del robot_stuff.path_follower
-                del robot_stuff.laser_sub
+    # # change main_cluster_idx if required by wall colision
+    # for robot_id, robot_stuff in state.robots_stuff.items():
+    #     if robot_stuff.path_follower is not None and robot_stuff.path_follower.path_is_probably_obstructed:
+    #         print("HIT THE WALL")
+    #         robot_stuff.main_cluster_idx += 1
+    #         if robot_stuff.laser_sub is not None:
+    #             robot_stuff.laser_sub.unregister()
+    #             del robot_stuff.path_follower
+    #             del robot_stuff.laser_sub
 
     # for each robot select cluster with main_cluster_idx'th largest weight
     robots_main_cluster = {

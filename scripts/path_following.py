@@ -74,11 +74,11 @@ class PathFollower:
             self.path_is_probably_obstructed = True
             if normal[0] < 0:
                 # backup going right
-                self.control_msg.angular.z = 0.5
+                self.control_msg.angular.z = 2.5
                 self.control_msg.linear.x = -0.2
             else:
                 # back up going left
-                self.control_msg.angular.z = 0.5
+                self.control_msg.angular.z = 2.5
                 self.control_msg.linear.x = -0.2
 
 
