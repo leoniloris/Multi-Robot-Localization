@@ -10,6 +10,7 @@ function kill_processes {
     pkill -f gazebo
     pkill -f python3
     pkill -f noetic
+    pkill -f map_server
 }
 
 function run_trial {
@@ -19,6 +20,7 @@ function run_trial {
     python3 src/multi_robot_localization/scripts/active_path_following.py 1 2 & \
     rosrun multi_robot_localization robot_node 1 & \
     rosrun multi_robot_localization robot_node 2 & \
+    python3 src/multi_robot_localization/scripts/map_server.py &
 }
 
 trap kill_processes SIGINT

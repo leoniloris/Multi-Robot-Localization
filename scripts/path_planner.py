@@ -8,9 +8,9 @@ import numpy as np
 import os
 
 ADJACENT_CELL_DISPLACEMENTS = [
-    (-2, -2, 2), (0, -2, 2), (2, -2, 2),
-    (-2,  0, 2),             (2,  0, 2),
-    (-2,  2, 2), (0,  2, 2), (2,  2, 2),
+    (-1, -1, 1), (0, -1, 1), (1, -1, 1),
+    (-1,  0, 1),             (1,  0, 1),
+    (-1,  1, 1), (0,  1, 1), (1,  1, 1),
     #          (0, -1, 1),
     # (-1,  0, 1),         (1,  0, 1),
     #          (0,  1, 1),
@@ -39,7 +39,7 @@ class Cell:
         return self.position == other.position
 
     def hit_the_wall(self, occupancy_grid):
-        return occupancy_grid[int(self.position[0]), int(self.position[1])] != 0
+        return occupancy_grid[self.position[0], self.position[1]] != 0
 
     def is_outside_grid(self, shape):
         return self.position[0] > (shape[0] - 1) or self.position[0] < 0 or\
@@ -49,7 +49,7 @@ class Cell:
         self.position = (self.position[0] + displacement[0],
                          self.position[1] + displacement[1])
         self.distance_from_begining += displacement[2]
-        self.cost = self.distance_from_begining + heuristic[int(np.floor(self.position[0])), int(np.floor(self.position[1]))]
+        self.cost = self.distance_from_begining + heuristic[self.position[0], self.position[1]]
 
 
 def trace_back_path_with_smallest_cost(parent_cell, occupancy_grid):
@@ -129,9 +129,9 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
     cells_yet_to_visit = [start_cell]
     visited_cells = []
 
-    # # TO DEBUG
-    # global saving_stuff
-    # saving_stuff = []
+    # TO DEBUG
+    global saving_stuff
+    saving_stuff = []
     while len(cells_yet_to_visit) > 0:
         cell_with_smallest_cost = min(cells_yet_to_visit, key=lambda c: c.cost)
         cells_yet_to_visit.remove(cell_with_smallest_cost)
@@ -154,8 +154,8 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
                         break
                 else:
                     cells_yet_to_visit.append(adjacent_cell)
-                    # # TO DEBUG
-                    # saving_stuff.append(adjacent_cell.position)
+                    # TO DEBUG
+                    saving_stuff.append(adjacent_cell.position)
 
 
 def test():
@@ -168,18 +168,19 @@ def test():
         a = time.time()
         # path = a_star(occupancy_grid, (130, 90), (10, 20))
         # path = a_star(occupancy_grid, (130, 90), (10, 100))
-        path = a_star(occupancy_grid, (115, 28), (11, 70))
+        # path = a_star(occupancy_grid, (55, 10), (57, 9))
+        path = a_star(occupancy_grid, (57, 89), (12, 109))
         print((time.time()-a))
     except KeyboardInterrupt as e:
         print(e)
 
     # TO DEBUG
-    # x, y = list(zip(*saving_stuff))
-    # path_x, path_y = list(zip(*path))
-    # sns.heatmap(increase_wall_sizes(occupancy_grid))
-    # plt.scatter(y, x, alpha=0.3)
-    # plt.scatter(path_y, path_x, alpha=1)
-    # plt.show()
+    x, y = list(zip(*saving_stuff))
+    path_x, path_y = list(zip(*path))
+    sns.heatmap(increase_wall_sizes(occupancy_grid))
+    plt.scatter(y, x, alpha=0.3)
+    plt.scatter(path_y, path_x, alpha=1)
+    plt.show()
 
 if __name__ == '__main__':
     test()

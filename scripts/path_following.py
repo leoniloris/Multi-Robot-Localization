@@ -106,11 +106,11 @@ class PathFollower:
             self.control_msg.linear.x = 0
             return
 
-        position_error = target.position() - np.asarray([x, y])
-        angle_error = angle - np.arctan2(*position_error[-1::-1])
+        position_error = target.position() - np.asarray([robot_x, robot_y])
+        angle_error = robot_angle - np.arctan2(*position_error[-1::-1])
         self.control_pose(position_error, angle_error)
 
-        self.clear_past_targets(x, y)
+        self.clear_past_targets(robot_x, robot_y)
 
 
     def get_target(self):

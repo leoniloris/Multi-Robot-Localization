@@ -1,7 +1,9 @@
 from multi_robot_localization.msg import clusters as ParticlesClusters
 from dataclasses import dataclass, field
+from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from typing import Any
+
 
 import path_following
 import path_planner
@@ -21,6 +23,7 @@ def load_occupancy_grid():
 OCCUPANCY_GRID = load_occupancy_grid()
 N_MOST_CERTAIN_CLUSTERS = 3
 N_ITERATIONS_WITH_CERTAIN_CLUSTERS = 5
+RECOMPUTE_PATHS_PERIOD_S = 7
 
 
 @dataclass
@@ -37,8 +40,8 @@ class RobotStuff:
 class State:
     n_iterations_with_same_certain_clusters: 'Any' = field(default=0)
     running_active_localization: 'Any' = field(default=False)
-    odometry_last_run_at: 'Any' = field(default_factory=lambda :time.time())
-    paths_last_calculated_at: 'Any' = field(default_factory=lambda :time.time())
+    odometry_last_run_at: 'Any' = field(default_factory=lambda :0)
+    paths_last_calculated_at: 'Any' = field(default_factory=lambda :0)
     robots_stuff: Any = field(default_factory=dict)
 
 
@@ -53,7 +56,8 @@ def clusters_recv_cb(msg):
     robot_id = msg.origin_robot_index
     should_run_odometry_for_active_localization = state.running_active_localization and state.robots_stuff[robot_id].path_follower is not None
     if should_run_odometry_for_active_localization:
-        print("rodando odometry for clusters")
+        cluster = state.robots_stuff[robot_id].clusters[state.robots_stuff[robot_id].main_cluster_id]
+        cluster_x, cluster_y, cluster_angle = cluster.x, cluster.y, cluster.angle
         state.robots_stuff[robot_id].path_follower.control_pose_from_setpoint(cluster_x, cluster_y, cluster_angle)
 
     if (time.time() - state.odometry_last_run_at) <= 0.4 or state.running_active_localization:
@@ -93,23 +97,22 @@ def prepare_for_active_localization():
             return
         robot_stuff.main_cluster_id = get_indexes_for_decreasing_order_of_cluster_weight(robot_stuff.clusters)[0]
         print(f'MAIN IDX FOR ROBOT {robot_id}: {robot_stuff.main_cluster_id}')
+        print(f'RUNNING ACTIVE {state.running_active_localization}')
 
 
 def run_active_localization():
-    global state
+    global state, RECOMPUTE_PATHS_PERIOD_S
     # check if it's time to update  paths
-    print("IS IT TIME TO UPDATE MEU PAINHO")
-    if (time.time() - state.paths_last_calculated_at) <= 4:# seconds
+    print("trying to run active localization")
+    if (time.time() - state.paths_last_calculated_at) <= RECOMPUTE_PATHS_PERIOD_S:# seconds
         return
     state.paths_last_calculated_at = time.time()
-    print("IT ISSSSSS")
-
+    print("running active localization")
     # for each robot select cluster with main_cluster_id'th largest weight
     robots_main_cluster = {
         robot_id: robot_stuff.clusters[robot_stuff.main_cluster_id]
         for robot_id, robot_stuff in state.robots_stuff.items()
     }
-    print(f'robots_main_cluster {robots_main_cluster}')
 
     # for each robot compute path to the largest-weighted cluster from someone else
     robots_begin_end = {}
@@ -118,22 +121,24 @@ def run_active_localization():
             [r_main_cluster for (r_id, r_main_cluster) in robots_main_cluster.items() if r_id != robot_id],
             key=lambda c: c.weight)
         robots_begin_end[robot_id] = [
-            (robot_main_clusters.x, robot_main_clusters.y),
-            (most_probable_cluster_other_robots.x, most_probable_cluster_other_robots.y)
+            [robot_main_clusters.x, robot_main_clusters.y],
+            [most_probable_cluster_other_robots.x, most_probable_cluster_other_robots.y]
         ]
 
-    print(f'robots_begin_end {robots_begin_end}')
     # put each robot to follow that path
+    print(f'robots_begin_end {robots_begin_end}')
     robots_paths = {
-        robot_id: [path_following.Landmark(*l) for l in path_planner.a_star(OCCUPANCY_GRID, robot_begin_end[0], robot_begin_end[1])]
+        robot_id: [path_following.Landmark(*l) for l in path_planner.a_star(OCCUPANCY_GRID, tuple(np.int_(robot_begin_end[0])), tuple(np.int_(robot_begin_end[1])))]
         for robot_id,robot_begin_end in robots_begin_end.items()
     }
 
+    print(f'robots_paths {robots_paths}')
     for robot_id, robot_stuff in state.robots_stuff.items():
         robot_stuff.path_follower = path_following.PathFollower(robots_paths[robot_id])
         robot_stuff.laser_sub = rospy.Subscriber(f'/ugv{str(robot_id)}/scan', LaserScan, robot_stuff.path_follower.clbk_laser)
 
     print("FEZ TUDO MEU PAINHO")
+    RECOMPUTE_PATHS_PERIOD_S = 5000
     # for each robot: check whether it's finished the path (stop experiment) or an obstacle was found (change main_cluster_id for a given robot)
     # def cb_once(msg, subscriber):
     #     #do processing here
@@ -162,7 +167,7 @@ def main():
     while not rospy.is_shutdown():
         if state.running_active_localization:
             run_active_localization()
-        # publish_control_messages()
+        publish_control_messages()
         rate.sleep()
 
 
@@ -170,7 +175,7 @@ def publish_control_messages():
     global state
     for robot_id, robot_stuff in state.robots_stuff.items():
         if robot_stuff.path_follower is not None:
-            actuator.publish(robot_stuff.path_follower.control_msg)
+            robot_stuff.actuator.publish(robot_stuff.path_follower.control_msg)
 
 
 if __name__ == '__main__':
