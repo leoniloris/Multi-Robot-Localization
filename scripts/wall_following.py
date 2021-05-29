@@ -144,7 +144,7 @@ def main():
     print(laser_topic)
     print(vel_topic)
 
-    pub_ = rospy.Publisher(vel_topic, Twist, queue_size=1)
+    pub_ = rospy.Publisher(vel_topic, Twist, queue_size=10)
 
     sub = rospy.Subscriber(laser_topic, LaserScan, clbk_laser)
 

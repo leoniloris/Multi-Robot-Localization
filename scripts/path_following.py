@@ -39,6 +39,8 @@ class PathFollower:
         self.avoiding_obstacle = False
         self.avoiding_obstacle_counter = 0
 
+        self.path_is_probably_obstructed = False
+
     def control_pose(self, position_error, angle_error):
         if self.avoiding_obstacle: return
 
@@ -57,6 +59,7 @@ class PathFollower:
         nearest_frontal_distance = min(msg.ranges[-60:] + msg.ranges[:60])
         should_avoid_obstacle = nearest_frontal_distance < 0.25
 
+
         if should_avoid_obstacle:
             scans = np.asarray(msg.ranges)
             scans[scans > 3] = 3
@@ -67,14 +70,14 @@ class PathFollower:
             ])
             normal = scan_vectors.mean(axis=0)
 
+            self.avoiding_obstacle = True
+            self.path_is_probably_obstructed = True
             if normal[0] < 0:
                 # backup going right
-                self.avoiding_obstacle = True
                 self.control_msg.angular.z = 0.5
                 self.control_msg.linear.x = -0.2
             else:
                 # back up going left
-                self.avoiding_obstacle = True
                 self.control_msg.angular.z = 0.5
                 self.control_msg.linear.x = -0.2
 
@@ -95,7 +98,6 @@ class PathFollower:
         angle = transformations.euler_from_quaternion([
             msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w
         ])[2]
-
         self.control_pose_from_setpoint(x, y, angle)
 
 

@@ -112,10 +112,8 @@ def create_heuristic_matrix(end_point: Tuple[int, int], occupancy_grid):
     return h
 
 
-def increase_wall_sizes(occupancy_grid):
+def increase_wall_sizes(occupancy_grid, x_wall_increase=4, y_wall_increase=5):
     from scipy.ndimage import convolve
-    x_wall_increase = 4
-    y_wall_increase = 5
     cramming_kernel = np.ones((x_wall_increase*2, y_wall_increase*2))
     return np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
 
@@ -138,8 +136,8 @@ def find_free_start_end(start, end, occupancy_grid):
             if start_set and end_set:
                 return start, end
 
-def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
-    occupancy_grid = increase_wall_sizes(occupancy_grid)
+def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int], x_wall_increase=4, y_wall_increase=5):
+    occupancy_grid = increase_wall_sizes(occupancy_grid, x_wall_increase=4, y_wall_increase=5)
     heuristic = create_heuristic_matrix(end, occupancy_grid)
     start, end = find_free_start_end(start, end, occupancy_grid)
     start_cell = Cell(None, start)
@@ -148,9 +146,9 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
     cells_yet_to_visit = [start_cell]
     visited_cells = []
 
-    # # TO DEBUG
-    # global saving_stuff
-    # saving_stuff = []
+    # TO DEBUG
+    global saving_stuff
+    saving_stuff = []
     while len(cells_yet_to_visit) > 0:
         cell_with_smallest_cost = min(cells_yet_to_visit, key=lambda c: c.cost)
         cells_yet_to_visit.remove(cell_with_smallest_cost)
@@ -158,7 +156,9 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
 
         has_found_end_cell = cell_with_smallest_cost == end_cell
         if has_found_end_cell:
-            return trace_back_path_with_smallest_cost(cell_with_smallest_cost, occupancy_grid)
+            path = trace_back_path_with_smallest_cost(cell_with_smallest_cost, occupancy_grid)
+            plot_stuff(saving_stuff, path, occupancy_grid)
+            return path
 
         for adjacent_cell in get_adjacent_cells(cell_with_smallest_cost, occupancy_grid, heuristic):
             if adjacent_cell in visited_cells:
@@ -173,8 +173,17 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
                         break
                 else:
                     cells_yet_to_visit.append(adjacent_cell)
-                    # # TO DEBUG
-                    # saving_stuff.append(adjacent_cell.position)
+                    # TO DEBUG
+                    saving_stuff.append(adjacent_cell.position)
+
+
+def plot_stuff(saving_stuff, path, occupancy_grid):
+    x, y = list(zip(*saving_stuff))
+    path_x, path_y = list(zip(*path))
+    sns.heatmap(increase_wall_sizes(occupancy_grid))
+    plt.scatter(y, x, alpha=0.3)
+    plt.scatter(path_y, path_x, alpha=1)
+    plt.show()
 
 
 def test():
@@ -194,13 +203,8 @@ def test():
     except KeyboardInterrupt as e:
         print(e)
 
-    # # TO DEBUG
-    # x, y = list(zip(*saving_stuff))
-    # path_x, path_y = list(zip(*path))
-    # sns.heatmap(increase_wall_sizes(occupancy_grid))
-    # plt.scatter(y, x, alpha=0.3)
-    # plt.scatter(path_y, path_x, alpha=1)
-    # plt.show()
+    # TO DEBUG
+    plot_stuff(saving_stuff, path, occupancy_grid)
 
 if __name__ == '__main__':
     test()

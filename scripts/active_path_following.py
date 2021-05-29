@@ -22,8 +22,8 @@ def load_occupancy_grid():
 
 OCCUPANCY_GRID = load_occupancy_grid()
 N_MOST_CERTAIN_CLUSTERS = 3
-N_ITERATIONS_WITH_CERTAIN_CLUSTERS = 5
-RECOMPUTE_PATHS_PERIOD_S = 7
+N_ITERATIONS_WITH_CERTAIN_CLUSTERS = 30
+RECOMPUTE_PATHS_PERIOD_S = 10
 
 
 @dataclass
@@ -31,9 +31,9 @@ class RobotStuff:
     actuator: rospy.Publisher
     path_follower: 'Any' = field(default=None)
     clusters: 'Any' = field(default_factory=dict)
-    previous_most_certain_clusters_idxs: 'Any' = field(default_factory=list)
-    current_most_certain_clusters_idxs: 'Any' = field(default_factory=list)
-    main_cluster_id: int = field(default=0)
+    previous_most_certain_clusters_ids: 'Any' = field(default_factory=list)
+    current_most_certain_clusters_ids: 'Any' = field(default_factory=list)
+    main_cluster_idx: int = field(default=0)
     laser_sub : 'Any' = field(default=None)
 
 @dataclass
@@ -56,13 +56,17 @@ def clusters_recv_cb(msg):
     robot_id = msg.origin_robot_index
     should_run_odometry_for_active_localization = state.running_active_localization and state.robots_stuff[robot_id].path_follower is not None
     if should_run_odometry_for_active_localization:
-        cluster = state.robots_stuff[robot_id].clusters[state.robots_stuff[robot_id].main_cluster_id]
-        cluster_x, cluster_y, cluster_angle = cluster.x, cluster.y, cluster.angle
-        state.robots_stuff[robot_id].path_follower.control_pose_from_setpoint(cluster_x, cluster_y, cluster_angle)
 
-    if (time.time() - state.odometry_last_run_at) <= 0.4 or state.running_active_localization:
-        return
-    state.odometry_last_run_at = time.time()
+        cluster_id = state.robots_stuff[robot_id].current_most_certain_clusters_ids[state.robots_stuff[robot_id].main_cluster_idx]
+
+        cluster = state.robots_stuff[robot_id].clusters[cluster_id]
+        cluster_x, cluster_y, cluster_angle = cluster.x, cluster.y, cluster.angle
+        state.robots_stuff[robot_id].path_follower.control_pose_from_setpoint(cluster_y, cluster_x, cluster_angle)
+
+    ## do this debounce, but for each separate robot
+    # if (time.time() - state.odometry_last_run_at) <= 0.4 or state.running_active_localization:
+    #     return
+    # state.odometry_last_run_at = time.time()
 
     state.running_active_localization = process_clusters_odometry(msg)
     if state.running_active_localization:
@@ -73,14 +77,13 @@ def clusters_recv_cb(msg):
 def process_clusters_odometry(msg):
     global state
     robot_id = msg.origin_robot_index
-    state.robots_stuff[robot_id].current_most_certain_clusters_idxs = get_indexes_for_decreasing_order_of_cluster_weight(msg.clusters)
+    state.robots_stuff[robot_id].current_most_certain_clusters_ids = get_indexes_for_decreasing_order_of_cluster_weight(msg.clusters)
 
-    if state.robots_stuff[robot_id].current_most_certain_clusters_idxs == state.robots_stuff[robot_id].previous_most_certain_clusters_idxs:
+    if state.robots_stuff[robot_id].current_most_certain_clusters_ids == state.robots_stuff[robot_id].previous_most_certain_clusters_ids:
         state.n_iterations_with_same_certain_clusters += 1
     else:
         state.n_iterations_with_same_certain_clusters = 0
-    print("111111111", state.n_iterations_with_same_certain_clusters)
-    state.robots_stuff[robot_id].previous_most_certain_clusters_idxs = state.robots_stuff[robot_id].current_most_certain_clusters_idxs
+    state.robots_stuff[robot_id].previous_most_certain_clusters_ids = state.robots_stuff[robot_id].current_most_certain_clusters_ids
     state.robots_stuff[robot_id].clusters = msg.clusters
 
     did_the_best_clusters_remain_the_same = state.n_iterations_with_same_certain_clusters >= N_ITERATIONS_WITH_CERTAIN_CLUSTERS
@@ -95,22 +98,29 @@ def prepare_for_active_localization():
             print("trying to start active localization without some active robots!")
             state.running_active_localization = False
             return
-        robot_stuff.main_cluster_id = get_indexes_for_decreasing_order_of_cluster_weight(robot_stuff.clusters)[0]
-        print(f'MAIN IDX FOR ROBOT {robot_id}: {robot_stuff.main_cluster_id}')
-        print(f'RUNNING ACTIVE {state.running_active_localization}')
+        robot_stuff.main_cluster_idx = 0
 
 
 def run_active_localization():
-    global state, RECOMPUTE_PATHS_PERIOD_S
+    global state
+
     # check if it's time to update  paths
-    print("trying to run active localization")
     if (time.time() - state.paths_last_calculated_at) <= RECOMPUTE_PATHS_PERIOD_S:# seconds
         return
     state.paths_last_calculated_at = time.time()
-    print("running active localization")
-    # for each robot select cluster with main_cluster_id'th largest weight
+
+    # change main_cluster_idx if required by wall colision
+    for robot_id, robot_stuff in state.robots_stuff.items():
+        if robot_stuff.path_follower is not None and robot_stuff.path_follower.path_is_probably_obstructed:
+            robot_stuff.main_cluster_idx += 1
+            if robot_stuff.laser_sub is not None:
+                robot_stuff.laser_sub.unregister()
+                del robot_stuff.path_follower
+                del robot_stuff.laser_sub
+
+    # for each robot select cluster with main_cluster_idx'th largest weight
     robots_main_cluster = {
-        robot_id: robot_stuff.clusters[robot_stuff.main_cluster_id]
+        robot_id: robot_stuff.clusters[robot_stuff.main_cluster_idx]
         for robot_id, robot_stuff in state.robots_stuff.items()
     }
 
@@ -128,26 +138,16 @@ def run_active_localization():
     # put each robot to follow that path
     print(f'robots_begin_end {robots_begin_end}')
     robots_paths = {
-        robot_id: [path_following.Landmark(*l) for l in path_planner.a_star(OCCUPANCY_GRID, tuple(np.int_(robot_begin_end[0])), tuple(np.int_(robot_begin_end[1])))]
+        robot_id: [path_following.Landmark(*l) for l in path_planner.a_star(
+            OCCUPANCY_GRID, tuple(np.int_(robot_begin_end[0])), tuple(np.int_(robot_begin_end[1]))),
+            x_wall_increase=2, y_wall_increase=2
+        ]
         for robot_id,robot_begin_end in robots_begin_end.items()
     }
 
-    print(f'robots_paths {robots_paths}')
     for robot_id, robot_stuff in state.robots_stuff.items():
         robot_stuff.path_follower = path_following.PathFollower(robots_paths[robot_id])
         robot_stuff.laser_sub = rospy.Subscriber(f'/ugv{str(robot_id)}/scan', LaserScan, robot_stuff.path_follower.clbk_laser)
-
-    print("FEZ TUDO MEU PAINHO")
-    RECOMPUTE_PATHS_PERIOD_S = 5000
-    # for each robot: check whether it's finished the path (stop experiment) or an obstacle was found (change main_cluster_id for a given robot)
-    # def cb_once(msg, subscriber):
-    #     #do processing here
-    #     subscriber.unregister()
-
-    # sub_once = None
-    # sub_once = rospy.Subscriber('my_topic,', MyType, cb_once, sub_once)
-    # However since you the right hand side of the last line has to finish before equating to the left hand side, thus sub_once point to wrong place, hence in the cb_once, subscriber.unregister() can't work. Is there another way?
-
 
     #### when finished, we need to set running_active_localization = False and unregister callbacks, set None stuff to None
 
@@ -157,12 +157,12 @@ def main():
     state = State()
     rospy.init_node('active_path_following_')
     state.robots_stuff = {
-        int(robot_id): RobotStuff(rospy.Publisher(f'/ugv{str(robot_id)}/cmd_vel', Twist, queue_size=1))\
+        int(robot_id): RobotStuff(rospy.Publisher(f'/ugv{str(robot_id)}/cmd_vel', Twist, queue_size=10))\
         for robot_id in sys.argv[1:]
     }
 
     _clusters_subscriber = rospy.Subscriber('robot_inf_broadcast', ParticlesClusters, clusters_recv_cb)
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(20)
 
     while not rospy.is_shutdown():
         if state.running_active_localization:
