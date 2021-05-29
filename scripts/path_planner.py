@@ -194,11 +194,11 @@ def test():
     try:
         import time
         a = time.time()
-        path = a_star(occupancy_grid, (130, 90), (10, 20))
+        # path = a_star(occupancy_grid, (130, 90), (10, 20))
         # path = a_star(occupancy_grid, (130, 90), (10, 100))
-        # path = a_star(occupancy_grid, (55, 10), (57, 9))
-        # path = a_star(occupancy_grid, (57, 89), (12, 109))
-        # path = a_star(occupancy_grid, (57, 80), (12, 109))
+        robot_begin_end = [[13.688589115913405, 105.02804535566482], [12.84592691880681, 109.36434319973365]]
+        path = a_star(occupancy_grid, tuple(np.int_(robot_begin_end[0])), tuple(np.int_(robot_begin_end[1]))   )
+
         print((time.time()-a))
     except KeyboardInterrupt as e:
         print(e)

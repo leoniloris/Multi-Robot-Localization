@@ -136,17 +136,17 @@ def run_active_localization():
         ]
 
     # put each robot to follow that path
-    print(f'robots_begin_end {robots_begin_end}')
-    robots_paths = {
-        robot_id: [path_following.Landmark(*l) for l in
-        path_planner.a_star(OCCUPANCY_GRID,
-                            tuple(np.int_(robot_begin_end[0])),
-                            tuple(np.int_(robot_begin_end[1])),
-                            x_wall_increase=4,
-                            y_wall_increase=1)
-        ]
-        for robot_id,robot_begin_end in robots_begin_end.items()
-    }
+    robots_paths = {}
+    for robot_id,robot_begin_end in robots_begin_end.items():
+        print('robot_begin_end', robot_id, tuple(np.int_(robot_begin_end[0])), tuple(np.int_(robot_begin_end[1])))
+        robots_paths[robot_id] = [
+            path_following.Landmark(*l) for l in
+            path_planner.a_star(OCCUPANCY_GRID,
+                                tuple(np.int_(robot_begin_end[0])),
+                                tuple(np.int_(robot_begin_end[1])))
+            ]
+
+    print(f'robots_paths {robots_paths}')
 
     for robot_id, robot_stuff in state.robots_stuff.items():
         robot_stuff.path_follower = path_following.PathFollower(robots_paths[robot_id])
