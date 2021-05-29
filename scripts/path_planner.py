@@ -120,18 +120,37 @@ def increase_wall_sizes(occupancy_grid):
     return np.clip(convolve(occupancy_grid, cramming_kernel), a_min=0, a_max=1)
 
 
+def find_free_start_end(start, end, occupancy_grid):
+    radius_search = 30
+    start_set = False
+    end_set = False
+    for r in range(radius_search):
+        for displacement in [[1, 0], [0, 1], [-1, 0], [0, -1]]:
+            start_to_test = (np.clip(start[0] + r*displacement[0], 0, occupancy_grid.shape[0]), np.clip(start[1] + r*displacement[1], 0, occupancy_grid.shape[1]))
+            end_to_test = (np.clip(end[0] + r*displacement[0], 0, occupancy_grid.shape[0]), np.clip(end[1] + r*displacement[1], 0, occupancy_grid.shape[1]))
+            if occupancy_grid[start_to_test[0], start_to_test[1]] == 0 and not start_set:
+                start = start_to_test
+                start_set = True
+            if occupancy_grid[end_to_test[0], end_to_test[1]] == 0 and not end_set:
+                end = end_to_test
+                end_set = True
+
+            if start_set and end_set:
+                return start, end
+
 def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
     occupancy_grid = increase_wall_sizes(occupancy_grid)
     heuristic = create_heuristic_matrix(end, occupancy_grid)
+    start, end = find_free_start_end(start, end, occupancy_grid)
     start_cell = Cell(None, start)
     end_cell = Cell(None, end)
 
     cells_yet_to_visit = [start_cell]
     visited_cells = []
 
-    # TO DEBUG
-    global saving_stuff
-    saving_stuff = []
+    # # TO DEBUG
+    # global saving_stuff
+    # saving_stuff = []
     while len(cells_yet_to_visit) > 0:
         cell_with_smallest_cost = min(cells_yet_to_visit, key=lambda c: c.cost)
         cells_yet_to_visit.remove(cell_with_smallest_cost)
@@ -154,8 +173,8 @@ def a_star(occupancy_grid, start: Tuple[int, int], end: Tuple[int, int]):
                         break
                 else:
                     cells_yet_to_visit.append(adjacent_cell)
-                    # TO DEBUG
-                    saving_stuff.append(adjacent_cell.position)
+                    # # TO DEBUG
+                    # saving_stuff.append(adjacent_cell.position)
 
 
 def test():
@@ -169,18 +188,19 @@ def test():
         # path = a_star(occupancy_grid, (130, 90), (10, 20))
         # path = a_star(occupancy_grid, (130, 90), (10, 100))
         # path = a_star(occupancy_grid, (55, 10), (57, 9))
-        path = a_star(occupancy_grid, (57, 89), (12, 109))
+        # path = a_star(occupancy_grid, (57, 89), (12, 109))
+        path = a_star(occupancy_grid, (57, 80), (12, 109))
         print((time.time()-a))
     except KeyboardInterrupt as e:
         print(e)
 
-    # TO DEBUG
-    x, y = list(zip(*saving_stuff))
-    path_x, path_y = list(zip(*path))
-    sns.heatmap(increase_wall_sizes(occupancy_grid))
-    plt.scatter(y, x, alpha=0.3)
-    plt.scatter(path_y, path_x, alpha=1)
-    plt.show()
+    # # TO DEBUG
+    # x, y = list(zip(*saving_stuff))
+    # path_x, path_y = list(zip(*path))
+    # sns.heatmap(increase_wall_sizes(occupancy_grid))
+    # plt.scatter(y, x, alpha=0.3)
+    # plt.scatter(path_y, path_x, alpha=1)
+    # plt.show()
 
 if __name__ == '__main__':
     test()
