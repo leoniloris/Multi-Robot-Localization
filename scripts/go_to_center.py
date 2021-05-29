@@ -29,7 +29,7 @@ RECOMPUTE_PATHS_PERIOD_S = 100000
 @dataclass
 class RobotStuff:
     actuator: rospy.Publisher
-    x_y_pra_roubar: 'Any'  = field(default=None)######## AAAAAAAAAA
+    x_y_angle_pra_roubar: 'Any'  = field(default=None)######## AAAAAAAAAA
     path_follower: 'Any' = field(default=None)
     clusters: 'Any' = field(default_factory=dict)
     previous_most_certain_clusters_ids: 'Any' = field(default_factory=list)
@@ -61,16 +61,19 @@ def clusters_recv_cb(msg):
 
     if state.running_active_localization:
         cluster_id = state.robots_stuff[robot_id].current_most_certain_clusters_ids[state.robots_stuff[robot_id].main_cluster_idx]
-        cluster = state.robots_stuff[robot_id].clusters[cluster_id]
+        cluster = max(state.robots_stuff[robot_id].clusters, key=lambda c:c.weight)
         cluster_x, cluster_y, cluster_angle = cluster.x, cluster.y, cluster.angle
 
 
         if state.robots_stuff[robot_id].path_follower is not None:
+            angolinho = state.robots_stuff[robot_id].x_y_angle_pra_roubar[2]
+            angolinho = np.fmod(angolinho+4*np.pi, 2*np.pi)
+            # state.robots_stuff[robot_id].path_follower.control_pose_from_setpoint(cluster_x, cluster_y, angolinho)
             state.robots_stuff[robot_id].path_follower.control_pose_from_setpoint(cluster_x, cluster_y, cluster_angle)
-        if str(robot_id) == '1':
-            print(f'cluster_x, cluster_y {cluster_x, cluster_y}')
-
         run_active_localization()
+        # if int(robot_id) == 2:
+            # print(f'cluster_x, cluster_y {cluster_x, cluster_y}')
+
     else:
         state.running_active_localization = process_clusters_odometry(msg)
         if state.running_active_localization:
@@ -99,10 +102,10 @@ def process_clusters_odometry(msg):
     ##### ROUBANDO
     a = True
     for robot_stuff in state.robots_stuff.values():
-        if len(robot_stuff.previous_most_certain_clusters_ids) >1 and len(robot_stuff.clusters) > 1 and robot_stuff.x_y_pra_roubar is not None:
+        if len(robot_stuff.previous_most_certain_clusters_ids) >1 and len(robot_stuff.clusters) > 1 and robot_stuff.x_y_angle_pra_roubar is not None:
             cluster_idx = robot_stuff.previous_most_certain_clusters_ids[robot_stuff.main_cluster_idx]
             cluster_xy = np.asarray([robot_stuff.clusters[cluster_idx].x,robot_stuff.clusters[cluster_idx].y])
-            real_xy = np.asarray(robot_stuff.x_y_pra_roubar)
+            real_xy = np.asarray(robot_stuff.x_y_angle_pra_roubar[:2])
             d = np.sqrt(((cluster_xy - real_xy)**2).sum())
             a = a and d < 10
     return a
@@ -180,16 +183,26 @@ def main():
         for robot_id in sys.argv[1:]
     }
     from nav_msgs.msg import Odometry
+    from tf import transformations
+
     def pra_roubar1(m):
         global state
         x = m.pose.pose.position.x * 10.0 + 69.0
         y = m.pose.pose.position.y * 10.0 + 59.0
-        state.robots_stuff[1].x_y_pra_roubar = (x,y)
+        angle = transformations.euler_from_quaternion([
+            m.pose.pose.orientation.x, m.pose.pose.orientation.y, m.pose.pose.orientation.z, m.pose.pose.orientation.w
+        ])[2]
+
+        state.robots_stuff[1].x_y_angle_pra_roubar = (x,y,angle)
     def pra_roubar2(m):
         global state
         x = m.pose.pose.position.x * 10.0 + 69.0
         y = m.pose.pose.position.y * 10.0 + 59.0
-        state.robots_stuff[2].x_y_pra_roubar = (x,y)
+        angle = transformations.euler_from_quaternion([
+            m.pose.pose.orientation.x, m.pose.pose.orientation.y, m.pose.pose.orientation.z, m.pose.pose.orientation.w
+        ])[2]
+
+        state.robots_stuff[2].x_y_angle_pra_roubar = (x,y,angle)
     rospy.Subscriber(f'/ugv1/odom', Odometry, pra_roubar1)
     rospy.Subscriber(f'/ugv2/odom', Odometry, pra_roubar2)
 

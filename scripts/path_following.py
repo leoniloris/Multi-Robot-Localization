@@ -29,7 +29,7 @@ with open(os.environ["HOME"] + "/catkin_ws/src/multi_robot_localization/include/
     CELLS_PER_METER = float(re.findall(r'CELLS_PER_METER \((.*?)\)', text)[0])
 
 
-LANDMARK_DETECTION_DISTANCE = 1.8
+LANDMARK_DETECTION_DISTANCE = 2
 AVOIDING_OBSTACLE_COUNTER_EXPIRITY = 12
 
 class PathFollower:
@@ -47,17 +47,17 @@ class PathFollower:
         angle_error = np.fmod(angle_error+4*np.pi, 2*np.pi)
         angle_error_for_actuation = -angle_error if angle_error < np.pi else (2*np.pi - angle_error)
         angle_error_for_actuation = np.sign(angle_error_for_actuation) * np.clip(abs(angle_error_for_actuation), 0, 1)
-        angle_actuation = (4 / np.pi) * angle_error_for_actuation
+        angle_actuation = (2 / np.pi) * angle_error_for_actuation
 
         direction = 1 if angle_error < np.pi/2 or angle_error > 3*np.pi/2 else -1
         distance_error = np.clip(np.linalg.norm(position_error), 0, 1)
-        gain = 0.4 - 0.37*(np.clip(abs(angle_error_for_actuation), 0, 45*np.pi/180)/(45*np.pi/180) )
+        gain = 0.2 - 0.17*(np.clip(abs(angle_error_for_actuation), 0, 45*np.pi/180)/(45*np.pi/180) )
         distance_actuation = direction * gain * distance_error
         self.control_msg.angular.z, self.control_msg.linear.x = angle_actuation, distance_actuation
 
     def clbk_laser(self, msg):
         nearest_frontal_distance = min(msg.ranges[-60:] + msg.ranges[:60])
-        should_avoid_obstacle = nearest_frontal_distance < 0.1
+        should_avoid_obstacle = nearest_frontal_distance < 0.2
 
 
         if should_avoid_obstacle:
@@ -74,11 +74,11 @@ class PathFollower:
             self.path_is_probably_obstructed = True
             if normal[0] < 0:
                 # backup going right
-                self.control_msg.angular.z = 2.5
+                self.control_msg.angular.z = 0.5
                 self.control_msg.linear.x = -0.2
             else:
                 # back up going left
-                self.control_msg.angular.z = 2.5
+                self.control_msg.angular.z = 0.5
                 self.control_msg.linear.x = -0.2
 
 
@@ -108,7 +108,7 @@ class PathFollower:
             self.control_msg.linear.x = 0
             return
 
-        print(f'from {robot_x, robot_y} to {target.position()[0],target.position()[1]}')
+        # print(f'from {robot_x, robot_y} to {target.position()[0],target.position()[1]}')
         position_error = target.position() - np.asarray([robot_x, robot_y])
         angle_error = robot_angle - np.arctan2(*position_error[-1::-1])
         self.control_pose(position_error, angle_error)
